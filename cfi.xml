@@ -1,26 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension version="3.7" type="plugin" group="system" method="upgrade">
+<extension type="plugin" group="system" method="upgrade">
     <name>PLG_CFI</name>
-    <version>1.0.15</version>
-    <creationDate>December 2022</creationDate>
-    <author>Aleksey A. Morozov</author>
-    <authorEmail>alekvolsk@yandex.ru</authorEmail>
-    <authorUrl>https://alekvolsk.pw</authorUrl>
-    <copyright>© Aleksey A. Morozov. All right reserved.</copyright>
+    <version>2.0.0</version>
+    <creationDate>16.09.2025</creationDate>
+    <author>Aleksey A. Morozov, Sergey Tolkachyov</author>
+    <authorEmail>info@web-tolk.ru</authorEmail>
+    <authorUrl>https://web-tolk.ru</authorUrl>
+    <copyright>Copyright (c) 2025 Aleksey A. Morozov, Sergey Tolkachyov. All rights reserved.</copyright>
     <license>GNU General Public License version 3 or later; see http://www.gnu.org/licenses/gpl-3.0.txt</license>
-    <description>PLG_CFI_XML_DESCRIPTION</description>
+    <description>PLG_CFI_DESC</description>
+    <namespace path="src">Joomla\Plugin\System\Cfi</namespace>
     <scriptfile>script.php</scriptfile>
-    <php_minimum>5.6</php_minimum>
+    <php_minimum>8.1</php_minimum>
     <files>
-        <filename plugin="cfi">cfi.php</filename>
         <folder>assets</folder>
         <folder>layouts</folder>
+        <folder>services</folder>
+        <folder plugin="cfi">src</folder>
     </files>
     <languages folder="language">
-        <language tag="en-GB">en-GB/en-GB.plg_system_cfi.ini</language>
-        <language tag="en-GB">en-GB/en-GB.plg_system_cfi.sys.ini</language>
-        <language tag="ru-RU">ru-RU/ru-RU.plg_system_cfi.ini</language>
-        <language tag="ru-RU">ru-RU/ru-RU.plg_system_cfi.sys.ini</language>
+        <language tag="en-GB">en-GB/plg_system_cfi.ini</language>
+        <language tag="en-GB">en-GB/plg_system_cfi.sys.ini</language>
+        <language tag="ru-RU">ru-RU/plg_system_cfi.ini</language>
+        <language tag="ru-RU">ru-RU/plg_system_cfi.sys.ini</language>
     </languages>
     <config>
         <fields name="params">
@@ -96,7 +98,10 @@
                     <option value="UTF-32BE">UTF-32BE</option>
                     <option value="UTF-32LE">UTF-32LE</option>
                 </field>
-                <field name="showdesc" type="radio" label="PLG_CFI_PARAM_SHOWDESC" class="btn-group" default="1">
+                <field name="showdesc" type="radio"
+                       label="PLG_CFI_PARAM_SHOWDESC"
+                       class="btn-group btn-group-yesno"
+                       default="1">
                     <option value="0">JNO</option>
                     <option value="1">JYES</option>
                 </field>
