@@ -2,7 +2,7 @@
 <extension type="plugin" group="system" method="upgrade">
     <name>PLG_CFI</name>
     <version>2.0.0</version>
-    <creationDate>16.09.2025</creationDate>
+    <creationDate>10.10.2025</creationDate>
     <author>Aleksey A. Morozov, Sergey Tolkachyov</author>
     <authorEmail>info@web-tolk.ru</authorEmail>
     <authorUrl>https://web-tolk.ru</authorUrl>
@@ -13,11 +13,14 @@
     <scriptfile>script.php</scriptfile>
     <php_minimum>8.1</php_minimum>
     <files>
-        <folder>assets</folder>
         <folder>layouts</folder>
         <folder>services</folder>
         <folder plugin="cfi">src</folder>
     </files>
+    <media destination="plg_system_cfi" folder="media">
+        <folder>js</folder>
+        <folder>css</folder>
+    </media>
     <languages folder="language">
         <language tag="en-GB">en-GB/plg_system_cfi.ini</language>
         <language tag="en-GB">en-GB/plg_system_cfi.sys.ini</language>
@@ -27,6 +30,78 @@
     <config>
         <fields name="params">
             <fieldset name="basic">
+                <field type="list"
+                       name="article_fields"
+                       label="article_fields"
+                       description="article_fields_desc"
+                       layout="joomla.form.field.list-fancy-select"
+                       multiple="true"
+                       default='{"0":"id","1":"title","2":"lang","3":"introtext","4":"fulltext"}'
+                >
+                    <option value="id">id</option>
+                    <option value="asset_id">asset_id</option>
+                    <option value="title">title</option>
+                    <option value="alias">alias</option>
+                    <option value="introtext">introtext</option>
+                    <option value="fulltext">fulltext</option>
+                    <option value="state">state</option>
+                    <option value="cat">catid</option>
+                    <option value="created">created</option>
+                    <option value="created_by">created_by</option>
+                    <option value="created_by_alias">created_by_alias</option>
+                    <option value="modified">modified</option>
+                    <option value="modified_by">modified_by</option>
+                    <option value="checked_out">checked_out</option>
+                    <option value="checked_out_time">checked_out_time</option>
+                    <option value="publish_up">publish_up</option>
+                    <option value="publish_down">publish_down</option>
+                    <option value="images">images</option>
+                    <option value="urls">urls</option>
+                    <option value="attribs">attribs</option>
+                    <option value="version">version</option>
+                    <option value="ordering">ordering</option>
+                    <option value="metakey">metakey</option>
+                    <option value="metadesc">metadesc</option>
+                    <option value="access">access</option>
+                    <option value="hits">hits</option>
+                    <option value="metadata">metadata</option>
+                    <option value="featured">featured</option>
+                    <option value="lang">language</option>
+                    <option value="featured_up">featured_up</option>
+                    <option value="featured_down">featured_down</option>
+                    <option value="category_title">category_title</option>
+                    <option value="category_alias">category_alias</option>
+                    <option value="category_access">category_access</option>
+                    <option value="category_language">category_language</option>
+                    <option value="author">author</option>
+                    <option value="parent_title">parent_title</option>
+                    <option value="parent_id">parent_id</option>
+                    <option value="parent_route">parent_route</option>
+                    <option value="parent_alias">parent_alias</option>
+                    <option value="parent_language">parent_language</option>
+                    <option value="rating">rating</option>
+                    <option value="rating_count">rating_count</option>
+                    <option value="params">params</option>
+                </field>
+                <field type="radio"
+                       name="use_custom_fields"
+                       label="use_custom_fields"
+                       layout="joomla.form.field.radio.switcher"
+                       default="1"
+                       >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field type="radio"
+                       name="use_tags"
+                       label="use_tags"
+                       layout="joomla.form.field.radio.switcher"
+                       default="0"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
                 <field name="cp" type="list" label="PLG_CFI_PARAM_CP" default="CP1251">
                     <option value="7bit">7bit</option>
                     <option value="8bit">8bit</option>

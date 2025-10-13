@@ -21,27 +21,27 @@ use Joomla\Plugin\System\Cfi\Extension\Cfi;
 
 return new class () implements ServiceProviderInterface {
 
-	/**
-	 * Registers the service provider with a DI container.
-	 *
-	 * @param   Container  $container  The DI container.
-	 *
-	 * @since   1.0.0
-	 */
-	public function register(Container $container)
-	{
-		$container->set(
-			PluginInterface::class,
-			function (Container $container) {
-				$plugin  = PluginHelper::getPlugin('system', 'cfi');
-				$subject = $container->get(DispatcherInterface::class);
+    /**
+     * Registers the service provider with a DI container.
+     *
+     * @param   Container  $container  The DI container.
+     *
+     * @since   1.0.0
+     */
+    public function register(Container $container)
+    {
+        $container->set(
+            PluginInterface::class,
+            function (Container $container) {
+                $plugin  = PluginHelper::getPlugin('system', 'cfi');
+                $subject = $container->get(DispatcherInterface::class);
 
-				$plugin = new Cfi($subject, (array) $plugin);
-				$plugin->setApplication(Factory::getApplication());
-				$plugin->setDatabase(Factory::getContainer()->get(DatabaseInterface::class));
+                $plugin = new Cfi($subject, (array) $plugin);
+                $plugin->setApplication(Factory::getApplication());
+                $plugin->setDatabase(Factory::getContainer()->get(DatabaseInterface::class));
 
-				return $plugin;
-			}
-		);
-	}
+                return $plugin;
+            }
+        );
+    }
 };

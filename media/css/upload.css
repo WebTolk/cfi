@@ -1,0 +1,64 @@
+#loading {
+  background-image: url('/media/system/images/ajax-loader.gif');
+  background-color: rgba(255, 255, 255, 0.8);
+  background-repeat: no-repeat;
+  background-position: center center;
+  opacity: 0.8;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.upload {
+  background-color: #fafbfc;
+  border: 1px dashed #999;
+  box-sizing: border-box;
+  transition: all 0.2s ease 0s;
+  width: 100%;
+  position: relative;
+}
+.upload__progress {
+  width: 50%;
+  margin: 5px auto;
+}
+.upload__progress .progress .bar {
+  -webkit-transition: width 0.1s;
+  -moz-transition: width 0.1s;
+  -o-transition: width 0.1s;
+  transition: width 0.1s;
+}
+.upload__icon {
+  font-size: 48px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  line-height: 175%;
+  color: #999;
+  transition: all 0.2s;
+}
+.upload p.lead {
+  color: #999;
+}
+.upload.hover {
+  border-color: #666;
+  background-color: #eee;
+}
+.upload[data-state=pending] .upload__progress {
+  display: none;
+}
+.upload[data-state=uploading] .upload__progress {
+  display: block;
+}
+.upload input {
+  display: none;
+}
+.upload.shadow-danger {
+  box-shadow: 0px 0px 25px rgba(165,31,24,1) inset;
+}
+
+.upload.shadow-success {
+  box-shadow: 0px 0px 25px rgba(68,131,68,1) inset;
+}
