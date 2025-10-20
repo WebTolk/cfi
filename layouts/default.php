@@ -49,11 +49,13 @@ Factory::getApplication()
     ->registerAndUseScript('plg_system_cfi.js','plg_system_cfi/cfi.js', [], ['defer' => true], ['core']);
 
 Text::script('PLG_CFI_EXPORT_SUCCESS');
+Text::script('PLG_CFI_IMPORT_SUCCESS');
 Text::script('PLG_CFI_EXPORT_ERROR');
+Text::script('PLG_CFI_IMPORT_ERROR');
 
 ?>
 
-<div class="mb-2 p-2 bg-light shadow-sm">
+<div class="mb-2 p-2 shadow-sm">
     <div id="cfi-progress-bar" class="progress mb-3 position-realtive d-flex align-items-center" role="progressbar" aria-label="<?php echo Text::_('PLG_CFI_EXPORT');?>" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
         <img src="/media/system/images/ajax-loader.gif" id="progress-icon" class="d-none position-absolute ms-2" width="10" height="10"><div id="progress-label" class="progress-bar" style=""></div>
     </div>
@@ -83,7 +85,7 @@ Text::script('PLG_CFI_EXPORT_ERROR');
             </div>
         <?php endif; ?>
     </div>
-    <div class="col-12 col-md-6 p-3 bg-light">
+    <div class="col-12 col-md-6 p-3 bg-secondary">
         <h3><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_LABEL');?></h3>
         <?php if(!empty($params)) :?>
             <p>
@@ -161,15 +163,15 @@ Text::script('PLG_CFI_EXPORT_ERROR');
             <div class="">
                 <button type="button" id="cfi-import-btn" data-task-id="" class="btn btn-lg btn-primary d-none"><?php echo Text::_('PLG_CFI_IMPORT');?></button>
             </div>
-            <div class="row row-cols-2 row-cols-xl">
-                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_CONTINUES');?>: <span class="badge bg-primary ms-auto" id="cfi-import-progress-data-continues">11</span></div>
-                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_ERRORS');?>: <span class="badge bg-danger ms-auto" id="cfi-import-progress-data-errors">450</span></div>
+            <div class="row row-cols-2 row-cols-xl d-none" id="cfi-import-progress-data-wrapper">
+                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_CONTINUES');?>: <span class="badge bg-primary ms-auto" id="cfi-import-progress-data-continues">0</span></div>
+                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_ERRORS');?>: <span class="badge bg-danger ms-auto" id="cfi-import-progress-data-errors">0</span></div>
                 <div class="col-12"><hr class="hr"></div>
-                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_INSERTS');?>: <span class="badge bg-primary ms-auto" id="cfi-import-progress-data-inserts">30</span></div>
-                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_UPDATES');?>: <span class="badge bg-primary ms-auto" id="cfi-import-progress-data-updates">15430</span></div>
+                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_INSERTS');?>: <span class="badge bg-primary ms-auto" id="cfi-import-progress-data-inserts">0</span></div>
+                <div class="col d-flex mb-2"><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_UPDATES');?>: <span class="badge bg-primary ms-auto" id="cfi-import-progress-data-updates">0</span></div>
             </div>
-            <details style="max-height: 200px;"><summary><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_ERROR_LIST');?></summary>
-                <div id="cfi-import-progress-data-error-list" class="d-block overflow-y-scroll bg-light p-2" style="max-height: 150px;">
+            <details class="d-none" style="max-height: 200px;"><summary><?php echo Text::_('PLG_CFI_IMPORT_CFI_IMPORT_PROGRESS_DATA_ERROR_LIST');?></summary>
+                <div id="cfi-import-progress-data-error-list" class="d-block overflow-y-scroll p-2" style="max-height: 150px;">
 
                 </div>
             </details>

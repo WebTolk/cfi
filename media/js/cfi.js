@@ -105,14 +105,13 @@ console.log('checkTaskStatus......');
                             return;
                         }
 
+                        CFI.updateProgressBar(status.current, status.total);
                         if (status.status === 'completed') {
-                            CFI.updateProgressBar(status.current, status.total);
                             CFI.deleteTaskIdFile(taskId);
-                            CFI.finishTask(status, 'export');
+                            CFI.finishTask(status, CFI.activeTaskType);
                             clearInterval(checkInterval);
-
                         } else {
-                            CFI.updateProgressBar(status.current, status.total);
+
                             if(CFI.activeTaskType === 'import') {
                                 CFI.updateImportProgressData(status);
                             }
@@ -140,10 +139,15 @@ console.log('checkTaskStatus......');
                 downloadBtn.classList.remove('d-none');
             }
             downloadBtn.setAttribute('href', status.url);
+            Joomla.renderMessages({
+                success: [Joomla.Text._('PLG_CFI_EXPORT_SUCCESS')]
+            });
+        } else {
+            Joomla.renderMessages({
+                success: [Joomla.Text._('PLG_CFI_IMPORT_SUCCESS')]
+            });
         }
-        Joomla.renderMessages({
-            success: [Joomla.Text._('PLG_CFI_EXPORT_SUCCESS')]
-        });
+
 
     }
 
@@ -186,7 +190,7 @@ console.log('checkTaskStatus......');
     }
 
     /**
-     * Recieve info about uploaded file from
+     * Receive info about uploaded file from
      * CFIUpload script. Upload has been successful.
      * We can show an import button
      *
@@ -222,7 +226,7 @@ console.log('checkTaskStatus......');
      */
     CFI.import = () => {
         console.log('import......');
-        // CFI.taskId = Date.now();
+        CfiUpload.resetArea();
         CFI.activeTaskType = 'import';
         CFI.clearProgressBar();
         CFI.startTask();
@@ -278,6 +282,11 @@ console.log('checkTaskStatus......');
      * @param {object} data
      */
     CFI.updateImportProgressData = (data) => {
+
+        const dataWrapper = document.getElementById('cfi-import-progress-data-wrapper');
+        if(dataWrapper.classList.contains('d-none')) {
+            dataWrapper.classList.remove('d-none')
+        }
         const continues = document.getElementById('cfi-import-progress-data-continues');
         continues.innerHTML = data.continues;
         const errors = document.getElementById('cfi-import-progress-data-errors');
@@ -287,7 +296,11 @@ console.log('checkTaskStatus......');
         const updates = document.getElementById('cfi-import-progress-data-updates');
         updates.innerHTML = data.updates;
         const errorList = document.getElementById('cfi-import-progress-data-error-list');
+        const errorListWrapper = errorList.parentNode;
         if(data.errors) {
+            if(errorListWrapper.classList.contains('d-none')) {
+                errorListWrapper.classList.remove('d-none')
+            }
             let list = document.createElement('ul');
             Object.entries(data.errors).forEach((value, index, array) => {
                 let listElem = document.createElement('li');

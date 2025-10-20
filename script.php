@@ -64,7 +64,7 @@ return new class() implements ServiceProviderInterface {
              *
              * @since  1.0.0
              */
-            protected string $minimumPhp = '7.4';
+            protected string $minimumPhp = '8.0';
 
             /**
              * @var array $providersInstallationMessageQueue

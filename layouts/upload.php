@@ -44,12 +44,6 @@ Text::script('PLG_CFI_IMPORT_UPLOAD_WARN_SERVER_DENY_FILE_UPLOAD');
 Text::script('PLG_CFI_IMPORT_UPLOAD_WARN_NO_FILE_SELECTED');
 Text::script('PLG_CFI_IMPORT_UPLOAD_WARN_UPLOADERROR');
 
-
-
-
-
-
-
 $maxSizeBytes =  FilesystemHelper::getFileUploadMaxSize();
 $maxSize      = HTMLHelper::_('number.bytes', $maxSizeBytes);
 

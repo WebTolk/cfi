@@ -39,6 +39,7 @@ return new class () implements ServiceProviderInterface {
                 $plugin = new Cfi($subject, (array) $plugin);
                 $plugin->setApplication(Factory::getApplication());
                 $plugin->setDatabase(Factory::getContainer()->get(DatabaseInterface::class));
+                $plugin->setCurrentUser(Factory::getApplication()->getIdentity());
 
                 return $plugin;
             }
