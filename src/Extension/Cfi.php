@@ -11,6 +11,7 @@
 namespace Joomla\Plugin\System\Cfi\Extension;
 
 use Exception;
+use Joomla\CMS\Application\CMSApplication;
 use Joomla\CMS\Date\Date;
 use Joomla\CMS\Event\AbstractEvent;
 use Joomla\CMS\Event\Plugin\AjaxEvent;
@@ -30,6 +31,7 @@ use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\User\CurrentUserTrait;
 use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
 use Joomla\Database\DatabaseAwareTrait;
+use Joomla\Database\ParameterType;
 use Joomla\Event\Dispatcher;
 use Joomla\Event\SubscriberInterface;
 use Joomla\Filesystem\File;
@@ -1028,7 +1030,7 @@ file_put_contents(JPATH_SITE.'/tmp/article.txt', print_r($articleData, true), FI
 
     /**
      * @param               $model
-     * @param   string|int  $articlehits
+     * @param   array  $articleData
      *
      *
      * @return bool
@@ -1036,19 +1038,65 @@ file_put_contents(JPATH_SITE.'/tmp/article.txt', print_r($articleData, true), FI
      */
     private function updateArticleUneditableData($model, array $articleData): bool
     {
-        $article_id = $model->getState($model->getName() . '.id');
-        file_put_contents(JPATH_SITE . '/tmp/asdasd.txt', $article_id . ' - ' . print_r($articleData) . PHP_EOL, FILE_APPEND);
+        $article_id = (int)$model->getState($model->getName() . '.id');
+file_put_contents(JPATH_SITE.'/tmp/'.__FUNCTION__.'.txt', print_r($article_id, true).PHP_EOL, FILE_APPEND);
+        if (!$article_id) {
+            return false;
+        }
+
         $db    = $this->getDatabase();
-        $query = $db->createQuery();
+        $query = $db->getQuery(true);
+
+        $setParts = [];
+
+        if (isset($articleData['hits'])) {
+            $hits = (int) $articleData['hits'];
+            $setParts[] = $db->quoteName('hits') . ' = :hits';
+            $query->bind(':hits', $hits, ParameterType::INTEGER);
+        }
+
+        if (isset($articleData['modified'])) {
+            $modified = (string) $articleData['modified'];
+            $setParts[] = $db->quoteName('modified') . ' = :modified';
+            $query->bind(':modified', $modified, ParameterType::STRING);
+        }
+
+        if (isset($articleData['modified_by'])) {
+            $modified_by = (int) $articleData['modified_by'];
+            $setParts[] = $db->quoteName('modified_by') . ' = :modified_by';
+            $query->bind(':modified_by', $modified_by, ParameterType::INTEGER);
+        }
+
+        if (empty($setParts)) {
+            return false;
+        }
+
         $query->update($db->quoteName('#__content'))
-            ->set($db->quoteName('hits') . ' = ' . $db->quote((int)$articlehits))
-            ->where($db->quoteName('id') . ' = ' . $db->quote($article_id));
-        $result = $db->setQuery($query)->execute();
-        unset($model, $db, $query);
+            ->set($setParts)
+            ->where($db->quoteName('id') . ' = :article_id');
+
+        $query->bind(':article_id', $article_id, ParameterType::INTEGER);
+
+        try {
+            $result = $db->execute($query);
+        } catch (Exception $e) {
+            $this->saveToLog($e->getMessage(), Log::ERROR);
+            return false;
+        }
 
         return $result;
     }
 
+    /**
+     * Prepare articles data for saving to CSV.
+     * Then transfer data to saveToCSV() method
+     *
+     * @param   string  $task_id
+     *
+     *
+     * @throws Exception
+     * @since 2.0.0
+     */
     private function exportArticles(string $task_id): void
     {
         $start = 0;

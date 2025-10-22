@@ -59,6 +59,8 @@ Text::script('PLG_CFI_IMPORT_ERROR');
     <div id="cfi-progress-bar" class="progress mb-3 position-realtive d-flex align-items-center" role="progressbar" aria-label="<?php echo Text::_('PLG_CFI_EXPORT');?>" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
         <img src="/media/system/images/ajax-loader.gif" id="progress-icon" class="d-none position-absolute ms-2" width="10" height="10"><div id="progress-label" class="progress-bar" style=""></div>
     </div>
+
+    <div class="d-none text-muted fs-6"><?php echo Text::_('PLG_CFI_IMPORT');?>: <span id="import-current-article-title"></span></div>
     <div class="form-check form-switch">
         <input class="form-check-input" type="checkbox" value="1" id="progress-switch-convert-cp" role="switch" name="cficonvert" switch>
         <label class="form-check-label" for="progress-switch-convert-cp">

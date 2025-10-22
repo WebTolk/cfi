@@ -106,15 +106,13 @@ console.log('checkTaskStatus......');
                         }
 
                         CFI.updateProgressBar(status.current, status.total);
+                        if(CFI.activeTaskType === 'import') {
+                            CFI.updateImportProgressData(status);
+                        }
                         if (status.status === 'completed') {
                             CFI.deleteTaskIdFile(taskId);
                             CFI.finishTask(status, CFI.activeTaskType);
                             clearInterval(checkInterval);
-                        } else {
-
-                            if(CFI.activeTaskType === 'import') {
-                                CFI.updateImportProgressData(status);
-                            }
                         }
                     },
                     onError: function (xhr, status, error) {
@@ -249,6 +247,9 @@ console.log('checkTaskStatus......');
                 console.log('import request ....');
                 try {
                     response = JSON.parse(response);
+                    if (response && response.messages) {
+                        Joomla.renderMessages(response.messages);
+                    }
                     if (response && response.success === false) {
                         CFI.hasError = true;
                         console.error('CFI: '+ response.message);
@@ -282,6 +283,16 @@ console.log('checkTaskStatus......');
      * @param {object} data
      */
     CFI.updateImportProgressData = (data) => {
+
+        const importCurrentArticleTitle = document.getElementById('import-current-article-title');
+        if(data.current_article_title !== '') {
+            if(importCurrentArticleTitle.parentNode.classList.contains('d-none')) {
+                importCurrentArticleTitle.parentNode.classList.remove('d-none');
+                importCurrentArticleTitle.innerHTML = data.current_article_title;
+            }
+        } else {
+            importCurrentArticleTitle.parentNode.classList.add('d-none');
+        }
 
         const dataWrapper = document.getElementById('cfi-import-progress-data-wrapper');
         if(dataWrapper.classList.contains('d-none')) {

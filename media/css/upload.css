@@ -63,3 +63,16 @@
 .upload.shadow-success {
   box-shadow: 0px 0px 25px rgba(68,131,68,1) inset;
 }
+
+.fade-out {
+  animation: fadeOut 2s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
