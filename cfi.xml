@@ -2,7 +2,7 @@
 <extension type="plugin" group="system" method="upgrade">
     <name>PLG_CFI</name>
     <version>2.0.0</version>
-    <creationDate>10.10.2025</creationDate>
+    <creationDate>17.11.2025</creationDate>
     <author>Aleksey A. Morozov, Sergey Tolkachyov</author>
     <authorEmail>info@web-tolk.ru</authorEmail>
     <authorUrl>https://web-tolk.ru</authorUrl>

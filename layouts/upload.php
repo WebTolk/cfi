@@ -1,11 +1,11 @@
 <?php
 /*
- * @package   pkg_radicalmart_import
- * @version   __DEPLOY_VERSION__
- * @author    Dmitriy Vasyukov - https://fictionlabs.ru
+ * @package    System - CFI
+ * @version   2.0.0
+ * @author     Aleksey A. Morozov, Sergey Tolkachyov
  * @copyright Copyright (c) 2023 Fictionlabs. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
- * @link      https://fictionlabs.ru/
+ * @link       https://web-tolk.ru
  */
 
 \defined('_JEXEC') or die;

@@ -60,9 +60,9 @@ Text::script('PLG_CFI_IMPORT_ERROR');
         <img src="/media/system/images/ajax-loader.gif" id="progress-icon" class="d-none position-absolute ms-2" width="10" height="10"><div id="progress-label" class="progress-bar" style=""></div>
     </div>
 
-    <div class="d-none text-muted fs-6"><?php echo Text::_('PLG_CFI_IMPORT');?>: <span id="import-current-article-title"></span></div>
+    <div id="import-current-article-title-wrapper" class="d-none text-muted fs-6"><?php echo Text::_('PLG_CFI_IMPORT');?>: <span id="import-current-article-title"></span></div>
     <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" value="1" id="progress-switch-convert-cp" role="switch" name="cficonvert" switch>
+        <input class="form-check-input" type="checkbox" value="1" id="progress-switch-convert-cp" role="switch" name="cficonvert" switch checked aria-checked="true">
         <label class="form-check-label" for="progress-switch-convert-cp">
             <?php echo Text::sprintf('PLG_CFI_CB_UTF_CONVERT', $params['params.cp']);?>
         </label>
