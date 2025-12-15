@@ -14,6 +14,9 @@
 
     CFI.hasError = false;
 
+	CFI.stopped = false;
+
+	CFI.taskInterval = null;
 
     CFI.startTask = () => {
         const startTaskUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=start_task&' + Joomla.getOptions('csrf.token') + '=1&task_id='+CFI.taskId + '&task_type='+CFI.activeTaskType;
@@ -29,9 +32,11 @@
      * Main export function
      */
     CFI.export = () => {
+		console.log(CFI);
         console.log('export......');
         CFI.taskId = Date.now();
-        CFI.activeTaskType = 'export'
+        CFI.activeTaskType = 'export';
+		CFI.enableStopBtn()
         CFI.clearProgressBar();
         const downloadBtn = document.getElementById('cfi-export-download-btn');
         downloadBtn.classList.add('d-none');
@@ -55,6 +60,12 @@
                 if (response.success === false) {
 
                     CFI.hasError = true;
+					CFI.stopped = true;
+					if (CFI.taskInterval) {
+						clearInterval(CFI.taskInterval);
+						CFI.taskInterval = null;
+					}
+					CFI.disableStopBtn();
                     console.error('CFI: '+ response.message);
                     Joomla.renderMessages({
                         error: [response.message]
@@ -65,6 +76,12 @@
             },
             onError: function (xhr, status, error) {
                 CFI.hasError = true;
+				CFI.stopped = true;
+				if (CFI.taskInterval) {
+					clearInterval(CFI.taskInterval);
+					CFI.taskInterval = null;
+				}
+				CFI.disableStopBtn();
                 Joomla.renderMessages({
                     error: [Joomla.Text._('PLG_CFI_EXPORT_ERROR')]
                 });
@@ -77,12 +94,17 @@
      * @param {string} taskId
      */
     CFI.checkTaskStatus = (taskId) => {
+		if(CFI.stopped === true) {
+			return;
+		}
 console.log('checkTaskStatus......');
         const checkTaskStatusUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=check_status&' + Joomla.getOptions('csrf.token') + '=1&task_id='+taskId;
-        const checkInterval = setInterval(async () => {
+
+		CFI.taskInterval = setInterval(async () => {
             console.log('checkTaskStatus - checkInterval......');
-            if(CFI.hasError === true) {
-                clearInterval(checkInterval);
+            if(CFI.hasError === true || CFI.stopped === true) {
+				clearInterval(CFI.taskInterval);
+				CFI.taskInterval = null;
                 CFI.clearProgressBar();
                 CFI.deleteTaskIdFile(taskId);
             }
@@ -99,7 +121,8 @@ console.log('checkTaskStatus......');
                         let status = response.data[0];
                         if(status.message) {
                             console.error('CFI: '+status.message);
-                            clearInterval(checkInterval);
+                            clearInterval(CFI.taskInterval);
+							CFI.taskInterval = null;
                             CFI.clearProgressBar();
                             CFI.deleteTaskIdFile(taskId);
                             return;
@@ -112,10 +135,13 @@ console.log('checkTaskStatus......');
                         if (status.status === 'completed') {
                             CFI.deleteTaskIdFile(taskId);
                             CFI.finishTask(status, CFI.activeTaskType);
-                            clearInterval(checkInterval);
+							clearInterval(CFI.taskInterval);
+							CFI.taskInterval = null;
                         }
                     },
                     onError: function (xhr, status, error) {
+						clearInterval(CFI.taskInterval);
+						CFI.taskInterval = null;
                         Joomla.renderMessages({
                             error: [Joomla.Text._('Ошибка получения статуса задачи!')]
                         });
@@ -124,9 +150,10 @@ console.log('checkTaskStatus......');
 
             } catch (error) {
                 console.error('Ошибка при опросе статуса:', error);
-                clearInterval(checkInterval);
+				clearInterval(CFI.taskInterval);
+				CFI.taskInterval = null;
             }
-        }, 1500); // Опрос каждые 1,5 секунды
+        }, 1000);
 
     }
 
@@ -154,8 +181,6 @@ console.log('checkTaskStatus......');
                 success: [Joomla.Text._('PLG_CFI_IMPORT_SUCCESS')]
             });
         }
-
-
     }
 
     CFI.deleteTaskIdFile = (taskId) => {
@@ -231,13 +256,63 @@ console.log('checkTaskStatus......');
             importBtn.classList.remove('d-none');
         }
     }
+	/**
+	 * disable stop button
+	 */
+	CFI.disableStopBtn = () => {
+        const stopBtn = document.getElementById('cfi-stop-task-btn');
+        stopBtn.disabled = true;
+    }
+	/**
+	 * Enable stop button
+	 */
+	CFI.enableStopBtn = () => {
+        const stopBtn = document.getElementById('cfi-stop-task-btn');
+        if(stopBtn.disabled === true) {
+			stopBtn.disabled = false;
+        }
+		stopBtn.addEventListener('click', CFI.stopTask);
+    }
+
+	/**
+	 * make ajax request to stop task
+	 */
+	CFI.stopTask = () => {
+		let stopUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=stop_task&' + Joomla.getOptions('csrf.token') + '=1&task_id='+CFI.taskId;
+		console.log('stopTask....');
+		Joomla.request({
+			url: stopUrl,
+			method: 'GET',
+			onSuccess: response => {
+				console.log('stop request ....');
+				if(response === '') {
+					console.warn('CFI: CFI.Import() got an empty response for ajax request.')
+				}
+			}
+		});
+
+		CFI.stopped = true;
+		if (CFI.taskInterval) {
+			clearInterval(CFI.taskInterval);
+			CFI.taskInterval = null;
+		}
+		Joomla.renderMessages({
+			info: [Joomla.Text._('PLG_CFI_PROCESS_CANCELED_BY_USER')]
+		});
+		CFI.init();
+    }
 
     /**
      * Main import function
      */
     CFI.import = () => {
+		console.log(CFI);
+		if(CFI.stopped === true) {
+			return;
+		}
         console.log('import......');
         CfiUpload.resetArea();
+		CFI.enableStopBtn();
         CFI.activeTaskType = 'import';
         CFI.clearProgressBar();
         CFI.startTask();
@@ -271,6 +346,11 @@ console.log('checkTaskStatus......');
                     }
                     if (response && response.success === false) {
                         CFI.hasError = true;
+						CFI.stopped = true;
+						if (CFI.taskInterval) {
+							clearInterval(CFI.taskInterval);
+							CFI.taskInterval = null;
+						}
                         console.error('CFI: '+ response.message);
                         Joomla.renderMessages({
                             error: [response.message]
@@ -282,6 +362,12 @@ console.log('checkTaskStatus......');
                 } catch (error) {
                     console.error(error);
                     CFI.hasError = true;
+					CFI.stopped = true;
+					if (CFI.taskInterval) {
+						clearInterval(CFI.taskInterval);
+						CFI.taskInterval = null;
+					}
+					CFI.disableStopBtn();
                     CFI.clearProgressBar();
                     CFI.deleteTaskIdFile(CFI.taskId);
                     return false;
@@ -289,6 +375,12 @@ console.log('checkTaskStatus......');
             },
             onError: function (xhr, status, error) {
                 CFI.hasError = true;
+				CFI.stopped = true;
+				if (CFI.taskInterval) {
+					clearInterval(CFI.taskInterval);
+					CFI.taskInterval = null;
+				}
+				CFI.disableStopBtn();
                 Joomla.renderMessages({
                     error: [Joomla.Text._('PLG_CFI_IMPORT_ERROR')]
                 });
@@ -341,8 +433,6 @@ console.log('checkTaskStatus......');
             errorList.innerHTML = ''; // очищаем контейнер
             errorList.appendChild(list); // добавляем список в контейнер
         }
-
-
     };
 
 
@@ -352,6 +442,7 @@ console.log('checkTaskStatus......');
     CFI.init = () => {
 console.log('init...');
         CFI.hasError = false;
+        CFI.stopped = false;
         const exportBtn = document.getElementById('cfi-export-btn');
         if(exportBtn) {
             exportBtn.addEventListener('click', CFI.export);
@@ -366,6 +457,13 @@ console.log('init...');
         if(importBtn) {
             importBtn.addEventListener('click', CFI.import);
         }
+
+		const stopBtn = document.getElementById('cfi-stop-task-btn');
+        if(stopBtn) {
+			CFI.disableStopBtn();
+        }
+
+		CFI.clearProgressBar();
 
     }
 

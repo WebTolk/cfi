@@ -52,21 +52,34 @@ Text::script('PLG_CFI_EXPORT_SUCCESS');
 Text::script('PLG_CFI_IMPORT_SUCCESS');
 Text::script('PLG_CFI_EXPORT_ERROR');
 Text::script('PLG_CFI_IMPORT_ERROR');
+Text::script('PLG_CFI_PROCESS_CANCELED_BY_USER');
 
 ?>
 
 <div class="mb-2 p-2 shadow-sm">
-    <div id="cfi-progress-bar" class="progress mb-3 position-realtive d-flex align-items-center" role="progressbar" aria-label="<?php echo Text::_('PLG_CFI_EXPORT');?>" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-        <img src="/media/system/images/ajax-loader.gif" id="progress-icon" class="d-none position-absolute ms-2" width="10" height="10"><div id="progress-label" class="progress-bar" style=""></div>
-    </div>
+	<div class="d-flex justify-content-between align-items-center">
+		<div class="w-100 me-2">
+			<div id="cfi-progress-bar" class="progress mb-3 position-realtive d-flex align-items-center"
+				 role="progressbar" aria-label="<?php echo Text::_('PLG_CFI_EXPORT'); ?>" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+				<img src="/media/system/images/ajax-loader.gif" id="progress-icon" class="d-none position-absolute ms-2"
+					 width="10" height="10">
+				<div id="progress-label" class="progress-bar" style=""></div>
+			</div>
 
-    <div id="import-current-article-title-wrapper" class="d-none text-muted fs-6"><?php echo Text::_('PLG_CFI_IMPORT');?>: <span id="import-current-article-title"></span></div>
-    <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" value="1" id="progress-switch-convert-cp" role="switch" name="cficonvert" switch checked aria-checked="true">
-        <label class="form-check-label" for="progress-switch-convert-cp">
-            <?php echo Text::sprintf('PLG_CFI_CB_UTF_CONVERT', $params['params.cp']);?>
-        </label>
-    </div>
+			<div id="import-current-article-title-wrapper" class="d-none text-muted fs-6"><?php echo Text::_('PLG_CFI_IMPORT'); ?>: <span id="import-current-article-title"></span></div>
+		</div>
+		<div>
+			<button class="btn btn-sm btn-danger" disabled id="cfi-stop-task-btn" title="<?php echo Text::_('JCANCEL'); ?>"><i class="fa-solid fa-stop"></i> <span class="visually-hidden"><?php echo Text::_('JCANCEL'); ?></span></button>
+		</div>
+	</div>
+	<div class="form-check form-switch">
+		<input class="form-check-input" type="checkbox" value="1" id="progress-switch-convert-cp" role="switch"
+			   name="cficonvert" switch checked aria-checked="true">
+		<label class="form-check-label" for="progress-switch-convert-cp">
+			<?php
+			echo Text::sprintf('PLG_CFI_CB_UTF_CONVERT', $params['params.cp']); ?>
+		</label>
+	</div>
 </div>
 
 <?php echo HTMLHelper::_('uitab.startTabSet', 'cfi', ['active' => 'export', 'recall' => true, 'breakpoint' => 768]); ?>
@@ -87,7 +100,7 @@ Text::script('PLG_CFI_IMPORT_ERROR');
             </div>
         <?php endif; ?>
     </div>
-    <div class="col-12 col-md-6 p-3 bg-secondary">
+    <div class="col-12 col-md-6 p-3 border">
         <h3><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_LABEL');?></h3>
         <?php if(!empty($params)) :?>
             <p>

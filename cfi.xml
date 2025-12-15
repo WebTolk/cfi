@@ -36,19 +36,17 @@
                        description="article_fields_desc"
                        layout="joomla.form.field.list-fancy-select"
                        multiple="true"
-                       default='{"0":"id","1":"title","2":"lang","3":"introtext","4":"fulltext"}'
+                       default='{"0":"id","1":"title","2":"catid","3":"introtext","4":"fulltext"}'
                 >
                     <option value="id">id</option>
-                    <option value="asset_id">asset_id</option>
                     <option value="title">title</option>
                     <option value="alias">alias</option>
+					<option value="catid">catid</option>
                     <option value="introtext">introtext</option>
                     <option value="fulltext">fulltext</option>
                     <option value="state">state</option>
-                    <option value="cat">catid</option>
                     <option value="created">created</option>
                     <option value="created_by">created_by</option>
-                    <option value="created_by_alias">created_by_alias</option>
                     <option value="modified">modified</option>
                     <option value="modified_by">modified_by</option>
                     <option value="checked_out">checked_out</option>
@@ -66,7 +64,7 @@
                     <option value="hits">hits</option>
                     <option value="metadata">metadata</option>
                     <option value="featured">featured</option>
-                    <option value="lang">language</option>
+                    <option value="language">language</option>
                     <option value="featured_up">featured_up</option>
                     <option value="featured_down">featured_down</option>
                     <option value="category_title">category_title</option>

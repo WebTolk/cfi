@@ -86,6 +86,12 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      * @since 2.0.0
      */
     private string $task_id;
+
+    /**
+     * @var string
+     * @since 2.0.0
+     */
+    private string $stop_file;
     /**
      * @var string
      * @since 2.0.0
@@ -100,6 +106,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $this->file   = Path::clean($this->config->get('tmp_path') . '/' . (new Date())->toUnix() . '.csv');
 
         $this->task_id_file = $this->config->get('tmp_path') . '/cfi_task_%s.json';
+        $this->stop_file = $this->config->get('tmp_path') . '/cfi_task_%s_stop.txt';
 
         $this->fieldPlugins = [
             'imagelist'     => 0,
@@ -243,6 +250,9 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             case 'export_articles':
                 $this->exportArticles($task_id);
                 break;
+            case 'stop_task':
+                $this->stopTask($task_id);
+                break;
             case 'viewModal':
             default:
                 $model         = $this->getApplication()->bootComponent('com_content')->getMVCFactory()->createModel(
@@ -317,6 +327,67 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     }
 
     /**
+     * Get absolute path to stop task file
+     *
+     * @param   string  $task_id
+     *
+     * @return string
+     *
+     * @since 2.0.0
+     */
+    private function getStopTaskFile(string $task_id): string
+    {
+        return Path::clean(sprintf($this->stop_file, $task_id));
+    }
+
+    /**
+     * Create a temporary file for stop task
+     *
+     * @param   string  $task_id
+     *
+     * @return void
+     *
+     * @since 2.0.0
+     */
+//    private function createStopTaskFile(string $task_id): void
+//    {
+//        File::write($this->getStopTaskFile($task_id), '');
+//    }
+
+    /**
+     * Stop task by task id
+     *
+     * @param   string  $task_id
+     *
+     *
+     * @since 2.0.0
+     */
+    private function stopTask(string $task_id): void
+    {
+        File::write($this->getStopTaskFile($task_id), '');
+//        $this->createStopTaskFile($task_id);
+    }
+
+    /**
+     * Check if task has been stopped by user from frontend
+     *
+     * @param   string  $task_id
+     *
+     *
+     * @return bool
+     * @since 2.0.0
+     */
+    private function checkStop(string $task_id): bool
+    {
+        $stopped = is_file($this->getStopTaskFile($task_id));
+        if ($stopped) {
+            $this->deleteTaskFile($task_id);
+        }
+        return $stopped;
+    }
+
+
+    /**
      * Delete temporary task json file
      *
      * @param   string  $task_id
@@ -326,9 +397,15 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      */
     private function deleteTaskFile(string $task_id)
     {
-        $file = $this->getTaskIdFile($task_id);
-        if (is_file($file)) {
-            File::delete($file);
+        $files = [
+            $this->getStopTaskFile($task_id),
+            $this->getTaskIdFile($task_id),
+            $this->file
+        ];
+        foreach ($files as $file) {
+            if(is_file($file)){
+                File::delete($file);
+            }
         }
     }
 
@@ -461,7 +538,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      */
     private function importArticles(string $task_id)
     {
-
         $this->file = Path::clean($this->config->get('tmp_path') . '/' . $task_id . '.csv');
         // log template
         $log_data = [
@@ -570,6 +646,11 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         );
 
         foreach ($lines as $strNum => $str) {
+            if($this->checkStop($task_id)) {
+                $this->saveToLog('Import has been stopped manually by user', Log::INFO);
+                return false;
+            }
+
             // get string in file
             $fieldsData = str_getcsv($str, ';', '"', "\\");
 
@@ -998,6 +1079,10 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     {
         $start = 0;
         while (true) {
+            if($this->checkStop($task_id)) {
+                $this->saveToLog('Export has been stopped manually by user', Log::INFO);
+                return;
+            }
             $model = $this->getApplication()
                 ->bootComponent('com_content')
                 ->getMVCFactory()
@@ -1015,7 +1100,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 json_encode(['total' => $total, 'current' => $start, 'type' => 'export', 'status' => 'inprogress'])
             );
 
-            $this->saveToCSV($articles);
+            $this->saveToCSV($articles, $task_id);
 
             if ($page_current == $page_total) {
                 break;
@@ -1051,14 +1136,20 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      * Save data to CSV file
      *
      * @param $articles
-     *
-     * @return true
+     * @param $task_id
      *
      * @throws Exception
+     * @return true
+     *
      * @since 2.0.0
      */
-    private function saveToCSV($articles)
+    private function saveToCSV($articles, $task_id)
     {
+        if($this->checkStop($task_id)) {
+            $this->saveToLog('Import has been stopped manually by user', Log::INFO);
+            return false;
+        }
+
         if (!$articles) {
             $this->saveToLog(Text::_('PLG_CFI_EXPORT_EMPTY_CONTENT'), Log::ERROR);
             throw new Exception(Text::_('PLG_CFI_EXPORT_EMPTY_CONTENT'), 500);
@@ -1072,7 +1163,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             throw new Exception(Text::_('PLG_CFI_EXPORTFILE_CREATE'), 500);
         }
 
-        $article_props = $this->params->get('article_fields', ['id', 'title', 'language', 'introtext', 'fulltext']);
+        $article_props = $this->params->get('article_fields', ['id', 'title', 'catid', 'introtext', 'fulltext']);
+
         if ($this->params->get('use_tags', 0)) {
             $article_props[] = 'tags';
             $this->addTagsToArticles($articles);
@@ -1110,26 +1202,20 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         if ($file_mode == 'w') {
             fputcsv($fileHandle, $columns, ';', '"', "\\", PHP_EOL);
         }
+
         // processing
         foreach ($articles as $article) {
             $outItem = [];
-//            $outItem[] = $article->id;
-//            $outItem[] = $article->catid;
-//            $outItem[] = str_replace(["\n", "\r"], ' ', $article->title);
-//            $outItem[] = str_replace(["\n", "\r"], ' ', $article->language);
-//            $outItem[] = str_replace(["\n", "\r"], ' ', $article->introtext);
-//            $outItem[] = str_replace(["\n", "\r"], ' ', $article->fulltext);
             foreach ($article_props as $property) {
-//                $outItem[] = $article->id;
-//                $outItem[] = $article->catid;
-                $outItem[] = is_string($article->$property) ? str_replace(["\n", "\r"],
-                    ' ',
-                    $article->$property) : $article->$property;
-//                $outItem[] = str_replace(["\n", "\r"], ' ', $article->language);
-//                $outItem[] = str_replace(["\n", "\r"], ' ', $article->introtext);
-//                $outItem[] = str_replace(["\n", "\r"], ' ', $article->fulltext);
+                $property_data = $article->$property;
+                if(is_array($property_data)) {
+                    $outItem[] =  'array::' . json_encode($property_data);
+                } elseif(is_string($property_data)) {
+                    $outItem[] =  str_replace(["\n", "\r"],' ', $property_data);
+                } else {
+                    $outItem[] =  $property_data;
+                }
             }
-
 
             if ($this->params->get('use_custom_fields', 0)) {
                 $jsFields = FieldsHelper::getFields('com_content.article', $article, true);
@@ -1138,8 +1224,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                         $jsField->type === 'checkboxes' ||
                         in_array($jsField->type, array_keys($this->fieldPlugins))
                     ) {
-                        $outItem[] =
-                            is_countable($jsField->rawvalue) && count($jsField->rawvalue) > 1
+                        $outItem[] = is_countable($jsField->rawvalue) && count($jsField->rawvalue) > 1
                                 ? json_encode($jsField->rawvalue)
                                 : (is_array($jsField->rawvalue) ? $jsField->rawvalue[0] : $jsField->rawvalue);
                     } elseif (is_array($jsField->rawvalue)) {
@@ -1461,10 +1546,16 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 if($data_group == 'article') {
                     if($column == 'alias') {
                         $articleData[$column] = OutputFilter::stringURLSafe($fieldsData[$key]);
+                    } elseif(in_array($column, ['created','modified','checked_out_time','publish_up','publish_down','featured_up','featured_down'])) {
+                        // Fix date format to SQL
+                        $articleData[$column] = (new Date($fieldsData[$key]))->toSql();
+                    } elseif (str_starts_with($fieldsData[$key], 'array::')) {
+                        $articleData[$column] =  json_decode(explode('::', $fieldsData[$key], 2)[1]);
                     } else {
                         $articleData[$column] = $fieldsData[$key];
                     }
-
+                } elseif (str_starts_with($fieldsData[$key], 'array::')) {
+                        $articleData[$data_group][$column] =  json_decode(explode('::', $fieldsData[$key], 2)[1]);
                 } else {
                     $articleData[$data_group][$column] = $fieldsData[$key];
                 }
