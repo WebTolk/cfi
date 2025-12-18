@@ -566,32 +566,35 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         /**
          * @todo Refactor to fgetcsv() and PHP Generator`yield`
          */
-        $content = trim(file_get_contents($this->file));
 
-        // unset utf-8 bom
-        $content = str_replace($this->BOM, '', $content);
-
-        // line separator definition
-        $rowDelimiter = "\r\n";
-        if (!str_contains($content, "\r\n")) {
-            $rowDelimiter = "\n";
-        }
-
-        // get lines array
-        $lines = explode($rowDelimiter, trim($content));
-        $lines = array_filter($lines);
-        $lines = array_map('trim', $lines);
-
-        if (count($lines) < 2) {
-            $log_data['result'] = Text::_('PLG_CFI_IMPORT_EMPTY');
-            $this->saveToLog($log_data, Log::ERROR);
-            echo new JsonResponse([], Text::_('PLG_CFI_IMPORT_EMPTY'), true);
-
-            return false;
-        }
+//        $content = trim(file_get_contents($this->file));
+//
+//        // unset utf-8 bom
+//        $content = str_replace($this->BOM, '', $content);
+//
+//        // line separator definition
+//        $rowDelimiter = "\r\n";
+//        if (!str_contains($content, "\r\n")) {
+//            $rowDelimiter = "\n";
+//        }
+//
+//        // get lines array
+//        $lines = explode($rowDelimiter, trim($content));
+//        $lines = array_filter($lines);
+//        $lines = array_map('trim', $lines);
+//
+//        if (count($lines) < 2) {
+//            $log_data['result'] = Text::_('PLG_CFI_IMPORT_EMPTY');
+//            $this->saveToLog($log_data, Log::ERROR);
+//            echo new JsonResponse([], Text::_('PLG_CFI_IMPORT_EMPTY'), true);
+//
+//            return false;
+//        }
 
         /** @var array $columns current file columns */
-        $columns = str_getcsv($lines[0], ';', '"', "\\");
+        [$columns, $lines_count] = array_values($this->getCsvMetadata($this->file, ';'));
+
+//        $columns = str_getcsv($lines[0], ';', '"', "\\");
 
         if ((!in_array('articleid', $columns)) || (!in_array('articletitle', $columns))) {
             $log_data['result'] = Text::_('PLG_CFI_IMPORT_NO_COLUMN');
@@ -600,7 +603,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
             return false;
         }
-        unset($lines[0]);
+//        unset($lines[0]);
 
 
         // data processing
@@ -611,22 +614,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
         set_time_limit(0);
 
-        $prepareEvent = AbstractEvent::create(
-            'onImportPrepareData',
-            [
-                'subject'  => $this,
-                'columns'  => $columns,
-                'articles' => $lines,
-            ]
-        );
-
         $dispatcher = new Dispatcher();
         PluginHelper::importPlugin('cfi', null, true, $dispatcher);
-        $results     = $dispatcher->dispatch($prepareEvent->getName(), $prepareEvent);
-        /** @var array $columns current file columns */
-        $columns     = $results['columns'];
-        $lines       = $results['articles'];
-        $lines_count = count($lines);
 
         // Save taskId data
         File::write(
@@ -642,17 +631,31 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 'inserts'               => $inserts,
                 'updates'               => $updates,
                 'continues'             => $continues,
-            ])
+            ], JSON_UNESCAPED_UNICODE)
         );
 
-        foreach ($lines as $strNum => $str) {
+        foreach ($this->readCsvRows($this->file, ';') as  $strNum => $fieldsData) {
+            if($strNum === 0) continue; // skip table headers
             if($this->checkStop($task_id)) {
                 $this->saveToLog('Import has been stopped manually by user', Log::INFO);
                 return false;
             }
+            $prepareEvent = AbstractEvent::create(
+                'onImportPrepareArticleData',
+                [
+                    'subject'  => $this,
+                    'columns'  => $columns,
+                    'strNum'  => $strNum,
+                    'article' => $fieldsData,
+                ]
+            );
+            $results     = $dispatcher->dispatch($prepareEvent->getName(), $prepareEvent);
+            /** @var array $columns current file columns */
+            $columns     = $results['columns'];
+            $fieldsData       = $results['article'];
 
             // get string in file
-            $fieldsData = str_getcsv($str, ';', '"', "\\");
+//            $fieldsData = str_getcsv($str, ';', '"', "\\");
 
             // check count columns
             if (count($fieldsData) != count($columns)) {
@@ -673,7 +676,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                         'inserts'               => $inserts,
                         'updates'               => $updates,
                         'continues'             => $continues,
-                    ])
+                    ],JSON_UNESCAPED_UNICODE)
                 );
 
                 continue;
@@ -693,7 +696,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             $isNewArticle = true;
 
             if ($articleData['id'] > 0) {
-                //var_dump($articleData['articleid']);
                 $article = $model->getItem((int)$articleData['id']);
 
                 if (empty($article) || !$article->id) {
@@ -713,7 +715,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                             'inserts'               => $inserts,
                             'updates'               => $updates,
                             'continues'             => $continues,
-                        ])
+                        ],JSON_UNESCAPED_UNICODE)
                     );
                     continue;
                 } else {
@@ -750,17 +752,17 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 File::write(
                     $this->getTaskIdFile($task_id),
                     json_encode([
-                        'total'                 => $lines_count,
-                        'current'               => $strNum,
-                        'current_article_title' => '',
-                        'type'                  => 'import',
-                        'status'                => 'inprogress',
-                        'errors_count'          => count($errors),
-                        'errors'                => $errors,
-                        'inserts'               => $inserts,
-                        'updates'               => $updates,
-                        'continues'             => $continues,
-                    ])
+                            'total'                 => $lines_count,
+                            'current'               => $strNum,
+                            'current_article_title' => '',
+                            'type'                  => 'import',
+                            'status'                => 'inprogress',
+                            'errors_count'          => count($errors),
+                            'errors'                => $errors,
+                            'inserts'               => $inserts,
+                            'updates'               => $updates,
+                            'continues'             => $continues,
+                        ], JSON_UNESCAPED_UNICODE)
                 );
                 continue;
             }
@@ -793,7 +795,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                         'inserts'               => $inserts,
                         'updates'               => $updates,
                         'continues'             => $continues,
-                    ])
+                    ], JSON_UNESCAPED_UNICODE)
                 );
                 continue;
             } elseif (!empty($errors[$strNum + 1])) {
@@ -864,13 +866,11 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                     'inserts'               => $inserts,
                     'updates'               => $updates,
                     'continues'             => $continues,
-                ])
+                ], JSON_UNESCAPED_UNICODE)
             );
             // destroy article instance
-            unset($article, $jsFields, $fieldModel);
+            unset($model, $article, $jsFields, $fieldModel);
         }
-
-        unset($model);
 
         File::write(
             $this->getTaskIdFile($task_id),
@@ -885,7 +885,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 'inserts'               => $inserts,
                 'updates'               => $updates,
                 'continues'             => $continues,
-            ])
+            ], JSON_UNESCAPED_UNICODE)
         );
 
         // show result
@@ -939,15 +939,13 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     public function saveToLog(array|string $data, int $priority = Log::NOTICE): void
     {
         if (is_array($data)) {
-            $data = json_encode($data);
+            $data = json_encode($data, JSON_UNESCAPED_UNICODE);
         }
 
         Log::addLogger(
             [
-                // Sets file name
                 'text_file' => 'cfi.php',
             ],
-            // Sets all but DEBUG log level messages to be sent to the file
             Log::ALL & ~Log::DEBUG,
             ['plg_system_cfi']
         );
@@ -1324,7 +1322,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'featured'         => 0,
             'created'          => $current_date,
             'created_by'       => $user_id,
-            'state'            => 1,
+            'state'            => '',
             'access'           => $this->getApplication()->get('access', 1),
             'note'             => '',
             'modified'         => $current_date,
@@ -1575,14 +1573,13 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             throw new \RuntimeException("Не удалось открыть файл: $filename");
         }
 
-        // Проверка и пропуск BOM (UTF-8)
+        // Check and skip BOM (UTF-8)
         $bom = fread($handle, 3);
         if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle); // BOM отсутствует — возвращаемся к началу
+            rewind($handle);
         }
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            // Пропускаем пустые строки
             if (empty(array_filter(array_map('trim', $row)))) {
                 continue;
             }
@@ -1590,6 +1587,51 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         }
 
         fclose($handle);
+    }
+
+    /**
+     * Читает заголовки CSV-файла и подсчитывает количество строк данных (без строки заголовков).
+     *
+     * @param string $filename Путь к CSV-файлу.
+     * @param string $delimiter Символ-разделитель колонок (по умолчанию ';').
+     * @return array Массив с ключами 'headers' (массив заголовков) и 'data_rows_count' (количество строк данных).
+     * @throws \RuntimeException Если не удалось открыть файл или прочитать заголовки.
+     * @since 2.0.0
+     */
+    private function getCsvMetadata(string $filename, string $delimiter = ';'): array
+    {
+        $handle = fopen($filename, 'r');
+        if (!$handle) {
+            throw new \RuntimeException("Не удалось открыть файл: $filename");
+        }
+
+        // Check and skip BOM (UTF-8)
+        $bom = fread($handle, 3);
+        if ($bom !== "\xEF\xBB\xBF") {
+            rewind($handle);
+        }
+
+        $headers = fgetcsv($handle, 0, $delimiter, ' ', "\\");
+
+        if ($headers === false) {
+            fclose($handle);
+            throw new \RuntimeException("Не удалось прочитать заголовки из файла: $filename");
+        }
+
+        $total = 0;
+        while (($row = fgetcsv($handle, 0, $delimiter, ' ', "\\")) !== false) {
+            if (!empty(array_filter(array_map('trim', $row)))) {
+                $total++;
+            }
+        }
+
+        fclose($handle);
+        $columns = array_map('trim', $headers);
+
+        return [
+            'columns' => $columns,
+            'total' => $total
+        ];
     }
 }
 

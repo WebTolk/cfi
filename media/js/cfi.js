@@ -26,6 +26,7 @@
             url: startTaskUrl,
             method: 'GET'
         });
+		CFI.enableStopBtn();
     }
 
     /**
@@ -36,7 +37,6 @@
         console.log('export......');
         CFI.taskId = Date.now();
         CFI.activeTaskType = 'export';
-		CFI.enableStopBtn()
         CFI.clearProgressBar();
         const downloadBtn = document.getElementById('cfi-export-download-btn');
         downloadBtn.classList.add('d-none');
@@ -181,6 +181,7 @@ console.log('checkTaskStatus......');
                 success: [Joomla.Text._('PLG_CFI_IMPORT_SUCCESS')]
             });
         }
+		CFI.disableStopBtn();
     }
 
     CFI.deleteTaskIdFile = (taskId) => {
@@ -199,7 +200,7 @@ console.log('checkTaskStatus......');
         progressBarLabel.style.width = '';
         progressBarLabel.innerHTML = '';
         progressBarIcon.classList.add('d-none');
-
+		CFI.disableStopBtn();
     }
 
     /**
@@ -299,6 +300,7 @@ console.log('checkTaskStatus......');
 		Joomla.renderMessages({
 			info: [Joomla.Text._('PLG_CFI_PROCESS_CANCELED_BY_USER')]
 		});
+		CFI.disableStopBtn();
 		CFI.init();
     }
 
@@ -312,7 +314,6 @@ console.log('checkTaskStatus......');
 		}
         console.log('import......');
         CfiUpload.resetArea();
-		CFI.enableStopBtn();
         CFI.activeTaskType = 'import';
         CFI.clearProgressBar();
         CFI.startTask();
