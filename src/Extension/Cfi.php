@@ -1051,7 +1051,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $query->bind(':article_id', $article_id, ParameterType::INTEGER);
 
         try {
-            $result = $db->execute($query);
+            $result = $db->setQuery($query)->execute();
 
         } catch (Exception $e) {
             $this->saveToLog($e->getMessage(), Log::ERROR);
