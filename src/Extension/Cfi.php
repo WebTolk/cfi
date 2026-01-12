@@ -563,38 +563,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             $converted = $this->convertFile($this->cp, 'UTF-8');
         }
 
-        /**
-         * @todo Refactor to fgetcsv() and PHP Generator`yield`
-         */
-
-//        $content = trim(file_get_contents($this->file));
-//
-//        // unset utf-8 bom
-//        $content = str_replace($this->BOM, '', $content);
-//
-//        // line separator definition
-//        $rowDelimiter = "\r\n";
-//        if (!str_contains($content, "\r\n")) {
-//            $rowDelimiter = "\n";
-//        }
-//
-//        // get lines array
-//        $lines = explode($rowDelimiter, trim($content));
-//        $lines = array_filter($lines);
-//        $lines = array_map('trim', $lines);
-//
-//        if (count($lines) < 2) {
-//            $log_data['result'] = Text::_('PLG_CFI_IMPORT_EMPTY');
-//            $this->saveToLog($log_data, Log::ERROR);
-//            echo new JsonResponse([], Text::_('PLG_CFI_IMPORT_EMPTY'), true);
-//
-//            return false;
-//        }
-
         /** @var array $columns current file columns */
         [$columns, $lines_count] = array_values($this->getCsvMetadata($this->file, ';'));
-
-//        $columns = str_getcsv($lines[0], ';', '"', "\\");
 
         if ((!in_array('articleid', $columns)) || (!in_array('articletitle', $columns))) {
             $log_data['result'] = Text::_('PLG_CFI_IMPORT_NO_COLUMN');
@@ -603,8 +573,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
             return false;
         }
-//        unset($lines[0]);
-
 
         // data processing
         $errors    = [];
@@ -643,8 +611,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             $prepareEvent = AbstractEvent::create(
                 'onImportPrepareArticleData',
                 [
-                    'subject'  => $this,
-                    'columns'  => $columns,
+                    'subject' => $this,
+                    'columns' => $columns,
                     'strNum'  => $strNum,
                     'article' => $fieldsData,
                 ]
@@ -652,10 +620,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             $results     = $dispatcher->dispatch($prepareEvent->getName(), $prepareEvent);
             /** @var array $columns current file columns */
             $columns     = $results['columns'];
-            $fieldsData       = $results['article'];
-
-            // get string in file
-//            $fieldsData = str_getcsv($str, ';', '"', "\\");
+            $fieldsData  = $results['article'];
 
             // check count columns
             if (count($fieldsData) != count($columns)) {
@@ -697,7 +662,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
             if ($articleData['id'] > 0) {
                 $article = $model->getItem((int)$articleData['id']);
-
                 if (empty($article) || !$article->id) {
                     unset($article);
                     $errors[$strNum + 1] = Text::sprintf('PLG_CFI_IMPORT_LOAD_ARTICLE', $articleData['id']);
@@ -727,10 +691,15 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 }
             }
 
-            $article = array_merge($article, $articleData);
+            $template = $this->getImportArticleTemplate();
 
+            if ($isNewArticle) {
+                $article = array_replace_recursive($template, $articleData);
+            } else {
+                $article = array_replace_recursive((array)$article, $articleData);
+            }
             // Save original category id for existing articles and set default category for new articles
-            if(empty($article['catid'])) {
+            if($isNewArticle && empty($article['catid'])) {
                 $article['catid'] = $this->getCategories()[0];
             }
 
@@ -812,7 +781,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             }
 
             // update hits, modified, modified by etc
-            $this->updateArticleUneditableData($article);
+            $this->updateArticleUneditableData($article, $columns);
 
             // get article custom fields
             $jsFields = FieldsHelper::getFields('com_content.article', $article, true);
@@ -1006,40 +975,69 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     }
 
     /**
+     * update hits, modified, modified by etc
+     *
      * @param   array  $articleData
+     * @param   array  $columns CSV columns
      *
      *
      * @return bool
      * @since 2.0.0
      */
-    private function updateArticleUneditableData(array $articleData): bool
+    private function updateArticleUneditableData(array $articleData, array $columns): bool
     {
 
-        if(!isset($article['id'])) {
+        if(!isset($articleData['id'])) {
             return false;
         }
+
+        $normalized_columns = array_map(function($col) {
+            return str_starts_with($col, 'article')
+                ? substr($col, strlen('article'))
+                : $col;
+        }, $columns);
+
         $db    = $this->getDatabase();
-        $query = $db->getQuery(true);
+        $query = $db->createQuery();
+
+        $now = (new Date())->toSql();
+        $user_id = $this->getCurrentUser()->id;
 
         $setParts = [];
 
-        if (isset($articleData['hits'])) {
-            $hits = (int) $articleData['hits'];
-            $setParts[] = $db->quoteName('hits') . ' = :hits';
-            $query->bind(':hits', $hits, ParameterType::INTEGER);
+        if (in_array('hits', $normalized_columns, true) && isset($articleData['hits'])) {
+                $hits       = (int)$articleData['hits'];
+                $setParts[] = $db->quoteName('hits') . ' = :hits';
+                $query->bind(':hits', $hits, ParameterType::INTEGER);
         }
 
-        if (isset($articleData['modified'])) {
-            $modified = (string) $articleData['modified'];
-            $setParts[] = $db->quoteName('modified') . ' = :modified';
-            $query->bind(':modified', $modified, ParameterType::STRING);
+        // modified
+        if (in_array('modified', $normalized_columns, true)) {
+            if (isset($articleData['modified'])) {
+                $modified = (string) $articleData['modified'];
+            } else {
+                $modified = $now;
+            }
+        } else {
+            $modified = $now;
         }
 
-        if (isset($articleData['modified_by'])) {
-            $modified_by = (int) $articleData['modified_by'];
-            $setParts[] = $db->quoteName('modified_by') . ' = :modified_by';
-            $query->bind(':modified_by', $modified_by, ParameterType::INTEGER);
+        $setParts[] = $db->quoteName('modified') . ' = :modified';
+        $query->bind(':modified', $modified, ParameterType::STRING);
+
+        // modified_by
+        if (in_array('modified_by', $normalized_columns, true)) {
+            if (isset($articleData['modified_by'])) {
+                $modified_by = (int) $articleData['modified_by'];
+            } else {
+                $modified_by = $user_id;
+            }
+        } else {
+            $modified_by = $user_id;
         }
+
+        $setParts[] = $db->quoteName('modified_by') . ' = :modified_by';
+        $query->bind(':modified_by', $modified_by, ParameterType::INTEGER);
 
         if (empty($setParts)) {
             unset($db, $query);
@@ -1054,6 +1052,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
         try {
             $result = $db->execute($query);
+
         } catch (Exception $e) {
             $this->saveToLog($e->getMessage(), Log::ERROR);
             unset($db, $query);
@@ -1322,7 +1321,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'featured'         => 0,
             'created'          => $current_date,
             'created_by'       => $user_id,
-            'state'            => '',
+            'state'            => 0,
             'access'           => $this->getApplication()->get('access', 1),
             'note'             => '',
             'modified'         => $current_date,
@@ -1401,13 +1400,13 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     /**
      * Detect which parameter group the data column belongs to.
      *
-     * @param   string  $column_name
+     * @param  string  $column_name
      *
-     * @return string
+     * @return string|false
      *
      * @since 2.0.0
      */
-    private function getImportColumnNameGroup(string $column_name): string
+    private function getImportColumnNameGroup(string $column_name): string|false
     {
         $article  = [
             'id',
@@ -1436,7 +1435,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $metadata = [
             'metadesc',
             'metakey',
-            'robots',
             'robots',
             'author',
             'rights',
@@ -1532,14 +1530,15 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      */
     private function computeArticleData(array $columns, array $fieldsData):array
     {
-        $articleData = $this->getImportArticleTemplate();
+        $articleData = [];
         foreach ($columns as $key => $column) {
             // column name like `articlehits`, `articleimages_image_intro`
             // remove `article` prefix
             // Check that it is in the beginning
-            if (strpos($column, 'article') === 0) {
+            if (str_starts_with($column, 'article')) {
                 $column = substr($column, strlen('article'));
             }
+
             if($data_group = $this->getImportColumnNameGroup($column)) {
                 if($data_group == 'article') {
                     if($column == 'alias') {
@@ -1563,9 +1562,18 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 unset($fieldsData[$key]);
             }
         }
+
         return ['articleData' => $articleData, 'fieldsData' => $fieldsData];
     }
 
+    /**
+     * @param   string  $filename Absolute path to CSV file
+     * @param   string  $delimiter CSV columns delimiter
+     *
+     * @return Generator
+     *
+     * @since 2.0.0
+     */
     private function readCsvRows(string $filename, string $delimiter = ','): Generator
     {
         $handle = fopen($filename, 'r');
