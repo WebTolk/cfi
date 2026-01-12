@@ -528,53 +528,380 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         }
     }
 
-    /**
-     * @param   string  $task_id
-     *
-     *
-     * @return bool
-     * @throws Exception
-     * @since 1.0.0
-     */
+//    /**
+//     * @param   string  $task_id
+//     *
+//     *
+//     * @return bool
+//     * @throws Exception
+//     * @since 1.0.0
+//     */
+//    private function importArticles(string $task_id)
+//    {
+//        $this->file = Path::clean($this->config->get('tmp_path') . '/' . $task_id . '.csv');
+//        // log template
+//        $log_data = [
+//            'result' => '',
+//            'user'   => $this->user,
+//            'file'   => $this->file,
+//        ];
+//
+//        // get categories
+//        $categories = $this->getCategories();
+//        if (!$categories) {
+//            $log_data['result'] = Text::_('PLG_CFI_IMPORT_GET_CATEGORIES');
+//            $this->saveToLog($log_data, Log::ERROR);
+//            echo new JsonResponse([], $log_data['result'], true);
+//
+//            return false;
+//        }
+//
+//        // convert to UTF-8
+//        $isConvert = (int)$this->getApplication()->getInput()->getBool('cficonvert', false);
+//
+//        if ($isConvert) {
+//            $converted = $this->convertFile($this->cp, 'UTF-8');
+//        }
+//
+//        /** @var array $columns current file columns */
+//        [$columns, $lines_count] = array_values($this->getCsvMetadata($this->file, ';'));
+//
+//        if ((!in_array('articleid', $columns)) || (!in_array('articletitle', $columns))) {
+//            $log_data['result'] = Text::_('PLG_CFI_IMPORT_NO_COLUMN');
+//            $this->saveToLog($log_data, Log::ERROR);
+//            echo new JsonResponse([], Text::_('PLG_CFI_IMPORT_NO_COLUMN'), true);
+//
+//            return false;
+//        }
+//
+//        // data processing
+//        $errors    = [];
+//        $inserts   = 0;
+//        $updates   = 0;
+//        $continues = 0;
+//
+//        set_time_limit(0);
+//
+//        $dispatcher = new Dispatcher();
+//        PluginHelper::importPlugin('cfi', null, true, $dispatcher);
+//
+//        // Save taskId data
+//        File::write(
+//            $this->getTaskIdFile($task_id),
+//            json_encode([
+//                'total'                 => $lines_count,
+//                'current'               => 0,
+//                'current_article_title' => '',
+//                'type'                  => 'import',
+//                'status'                => 'inprogress',
+//                'errors_count'          => 0,
+//                'errors'                => $errors,
+//                'inserts'               => $inserts,
+//                'updates'               => $updates,
+//                'continues'             => $continues,
+//            ], JSON_UNESCAPED_UNICODE)
+//        );
+//
+//        foreach ($this->readCsvRows($this->file, ';') as  $strNum => $fieldsData) {
+//            if($strNum === 0) continue; // skip table headers
+//            if($this->checkStop($task_id)) {
+//                $this->saveToLog('Import has been stopped manually by user', Log::INFO);
+//                return false;
+//            }
+//            $prepareEvent = AbstractEvent::create(
+//                'onImportPrepareArticleData',
+//                [
+//                    'subject' => $this,
+//                    'columns' => $columns,
+//                    'strNum'  => $strNum,
+//                    'article' => $fieldsData,
+//                ]
+//            );
+//            $results     = $dispatcher->dispatch($prepareEvent->getName(), $prepareEvent);
+//            /** @var array $columns current file columns */
+//            $columns     = $results['columns'];
+//            $fieldsData  = $results['article'];
+//
+//            // check count columns
+//            if (count($fieldsData) != count($columns)) {
+//                $errors[$strNum + 1] = Text::_('PLG_CFI_IMPORT_COLUMN_EXCEPT');
+//                $continues++;
+//
+//                // Save taskId data
+//                File::write(
+//                    $this->getTaskIdFile($task_id),
+//                    json_encode([
+//                        'total'                 => $lines_count,
+//                        'current'               => $strNum,
+//                        'current_article_title' => '',
+//                        'type'                  => 'import',
+//                        'status'                => 'inprogress',
+//                        'errors_count'          => count($errors),
+//                        'errors'                => $errors,
+//                        'inserts'               => $inserts,
+//                        'updates'               => $updates,
+//                        'continues'             => $continues,
+//                    ],JSON_UNESCAPED_UNICODE)
+//                );
+//
+//                continue;
+//            }
+//
+//            [$articleData, $fieldsData] =  array_values($this->computeArticleData($columns, $fieldsData));
+//
+//
+//            // get article instance
+//            $model = $this->getApplication()
+//                ->bootComponent('com_content')
+//                ->getMVCFactory()
+//                ->createModel('Article', 'Administrator', ['ignore_request' => true]);
+//            Form::addFormPath(JPATH_ADMINISTRATOR . '/components/com_content/forms');
+//
+//            $article      = [];
+//            $isNewArticle = true;
+//
+//            if ($articleData['id'] > 0) {
+//                $article = $model->getItem((int)$articleData['id']);
+//                if (empty($article) || !$article->id) {
+//                    unset($article);
+//                    $errors[$strNum + 1] = Text::sprintf('PLG_CFI_IMPORT_LOAD_ARTICLE', $articleData['id']);
+//                    // Save taskId data
+//                    File::write(
+//                        $this->getTaskIdFile($task_id),
+//                        json_encode([
+//                            'total'                 => $lines_count,
+//                            'current'               => $strNum,
+//                            'current_article_title' => '',
+//                            'type'                  => 'import',
+//                            'status'                => 'inprogress',
+//                            'errors_count'          => count($errors),
+//                            'errors'                => $errors,
+//                            'inserts'               => $inserts,
+//                            'updates'               => $updates,
+//                            'continues'             => $continues,
+//                        ],JSON_UNESCAPED_UNICODE)
+//                    );
+//                    continue;
+//                } else {
+//                    $isNewArticle = false;
+//                    $article = (array)$article;
+//                    if (isset($article['tags'])) {
+//                        $article['tags'] = explode(',', $article['tags']->tags);
+//                    }
+//                }
+//            }
+//
+//            $template = $this->getImportArticleTemplate();
+//
+//            if ($isNewArticle) {
+//                $article = array_replace_recursive($template, $articleData);
+//            } else {
+//                $article = array_replace_recursive((array)$article, $articleData);
+//            }
+//            // Save original category id for existing articles and set default category for new articles
+//            if($isNewArticle && empty($article['catid'])) {
+//                $article['catid'] = $this->getCategories()[0];
+//            }
+//
+//            // article form
+//            $form = $model->getForm($article, true);
+//            $errs = [];
+//            if (!$form) {
+//                foreach ($model->getErrors() as $error) {
+//                    $errs[] = ($error instanceof Exception) ? $error->getMessage() : $error;
+//                }
+//                if (!empty($errors[$strNum + 1])) {
+//                    $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
+//                } else {
+//                    $errors[$strNum + 1] = Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
+//                }
+//                unset($model, $article, $errs);
+//                $continues++;
+//                // Save taskId data
+//                File::write(
+//                    $this->getTaskIdFile($task_id),
+//                    json_encode([
+//                        'total'                 => $lines_count,
+//                        'current'               => $strNum,
+//                        'current_article_title' => '',
+//                        'type'                  => 'import',
+//                        'status'                => 'inprogress',
+//                        'errors_count'          => count($errors),
+//                        'errors'                => $errors,
+//                        'inserts'               => $inserts,
+//                        'updates'               => $updates,
+//                        'continues'             => $continues,
+//                    ], JSON_UNESCAPED_UNICODE)
+//                );
+//                continue;
+//            }
+//
+//            // save article item
+//            $this->getApplication()->getInput()->set('task', 'save');
+//            if ($model->save($article) === false) {
+//                foreach ($model->getErrors() as $error) {
+//                    $errs[] = ($error instanceof Exception) ? $error->getMessage() : $error;
+//                }
+//                if (!empty($errors[$strNum + 1])) {
+//                    $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
+//                } else {
+//                    $errors[$strNum + 1] = Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
+//                }
+//
+//                unset($model, $article, $errs);
+//                $continues++;
+//                // Save taskId data
+//                File::write(
+//                    $this->getTaskIdFile($task_id),
+//                    json_encode([
+//                        'total'                 => $lines_count,
+//                        'current'               => $strNum,
+//                        'current_article_title' => '',
+//                        'type'                  => 'import',
+//                        'status'                => 'inprogress',
+//                        'errors_count'          => count($errors),
+//                        'errors'                => $errors,
+//                        'inserts'               => $inserts,
+//                        'updates'               => $updates,
+//                        'continues'             => $continues,
+//                    ], JSON_UNESCAPED_UNICODE)
+//                );
+//                continue;
+//            } elseif (!empty($errors[$strNum + 1])) {
+//                $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVENEW_ARTICLE');
+//            }
+//
+//            if ($isNewArticle) {
+//                $inserts++;
+//
+//                // get ID for the new article
+//                $article['id'] = $model->getState($model->getName() . '.id');
+//            } else {
+//                $updates++;
+//            }
+//
+//            // update hits, modified, modified by etc
+//            $this->updateArticleUneditableData($article, $columns);
+//
+//            // get article custom fields
+//            $jsFields = FieldsHelper::getFields('com_content.article', $article, true);
+//            foreach ($jsFields as $key => $jsField) {
+//                $jsFields[$jsField->name] = $jsField;
+//                unset($jsFields[$key]);
+//            }
+//
+//            // save field's values
+//            $fieldsErrors = [];
+//            $fieldModel = $this->getApplication()
+//                ->bootComponent('com_fields')
+//                ->getMVCFactory()
+//                ->createModel('Field', 'Administrator', ['ignore_request' => true]);
+//
+//            Form::addFormPath(JPATH_ADMINISTRATOR . '/components/com_content/forms');
+//
+//            foreach ($fieldsData as $fieldName => $fieldValue) {
+//
+//                if (array_key_exists($fieldName, $jsFields)) {
+//
+//                    if (
+//                        $jsFields[$fieldName]->type === 'checkboxes' ||
+//                        in_array($jsFields[$fieldName]->type, array_keys($this->fieldPlugins))
+//                    ) {
+//                        $decode     = json_decode($fieldValue, true);
+//                        $fieldValue = json_last_error() === JSON_ERROR_NONE ? $decode : [$fieldValue];
+//                    } elseif (str_starts_with($fieldValue, 'array::')) {
+//                        $fieldValue = json_decode(explode('::', $fieldValue, 2)[1]);
+//                    }
+//                    if (!$fieldModel->setFieldValue($jsFields[$fieldName]->id, $article['id'], $fieldValue)) {
+//                        $fieldsErrors[] = $fieldName;
+//                    }
+//                }
+//            }
+//            if ($fieldsErrors) {
+//                $errors[$strNum + 1] = Text::sprintf('PLG_CFI_IMPORT_SAVE_FIELDS', implode(', ', $fieldsErrors));
+//            }
+//
+//            // Save taskId data
+//            File::write(
+//                $this->getTaskIdFile($task_id),
+//                json_encode([
+//                    'total'                 => $lines_count,
+//                    'current'               => $strNum,
+//                    'current_article_title' => \htmlspecialchars($article['title']),
+//                    'type'                  => 'import',
+//                    'status'                => 'inprogress',
+//                    'errors_count'          => count($errors),
+//                    'errors'                => $errors,
+//                    'inserts'               => $inserts,
+//                    'updates'               => $updates,
+//                    'continues'             => $continues,
+//                ], JSON_UNESCAPED_UNICODE)
+//            );
+//            // destroy article instance
+//            unset($model, $article, $jsFields, $fieldModel);
+//        }
+//
+//        File::write(
+//            $this->getTaskIdFile($task_id),
+//            json_encode([
+//                'total'                 => $lines_count,
+//                'current'               => $lines_count,
+//                'current_article_title' => '',
+//                'type'                  => 'import',
+//                'status'                => 'completed',
+//                'errors_count'          => count($errors),
+//                'errors'                => $errors,
+//                'inserts'               => $inserts,
+//                'updates'               => $updates,
+//                'continues'             => $continues,
+//            ], JSON_UNESCAPED_UNICODE)
+//        );
+//
+//        // show result
+//        $log_data['result'] = Text::sprintf('PLG_CFI_RESULT', $inserts + $updates, $inserts, $updates) .
+//            ($errors ? '<br>' . Text::sprintf('PLG_CFI_RESULT_ERROR', $continues) : '');
+//        if ($errors) {
+//            $log_data['errors'] = $errors;
+//        } else {
+//            unlink($this->file);
+//        }
+//        $this->saveToLog($log_data, Log::INFO);
+//
+//        return true;
+//    }
+
     private function importArticles(string $task_id)
     {
         $this->file = Path::clean($this->config->get('tmp_path') . '/' . $task_id . '.csv');
-        // log template
+
         $log_data = [
             'result' => '',
             'user'   => $this->user,
             'file'   => $this->file,
         ];
 
-        // get categories
         $categories = $this->getCategories();
         if (!$categories) {
             $log_data['result'] = Text::_('PLG_CFI_IMPORT_GET_CATEGORIES');
             $this->saveToLog($log_data, Log::ERROR);
             echo new JsonResponse([], $log_data['result'], true);
-
             return false;
         }
 
-        // convert to UTF-8
         $isConvert = (int)$this->getApplication()->getInput()->getBool('cficonvert', false);
-
         if ($isConvert) {
             $converted = $this->convertFile($this->cp, 'UTF-8');
         }
 
-        /** @var array $columns current file columns */
         [$columns, $lines_count] = array_values($this->getCsvMetadata($this->file, ';'));
 
         if ((!in_array('articleid', $columns)) || (!in_array('articletitle', $columns))) {
             $log_data['result'] = Text::_('PLG_CFI_IMPORT_NO_COLUMN');
             $this->saveToLog($log_data, Log::ERROR);
             echo new JsonResponse([], Text::_('PLG_CFI_IMPORT_NO_COLUMN'), true);
-
             return false;
         }
 
-        // data processing
         $errors    = [];
         $inserts   = 0;
         $updates   = 0;
@@ -585,29 +912,57 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $dispatcher = new Dispatcher();
         PluginHelper::importPlugin('cfi', null, true, $dispatcher);
 
-        // Save taskId data
-        File::write(
-            $this->getTaskIdFile($task_id),
-            json_encode([
-                'total'                 => $lines_count,
-                'current'               => 0,
-                'current_article_title' => '',
-                'type'                  => 'import',
-                'status'                => 'inprogress',
-                'errors_count'          => 0,
-                'errors'                => $errors,
-                'inserts'               => $inserts,
-                'updates'               => $updates,
-                'continues'             => $continues,
-            ], JSON_UNESCAPED_UNICODE)
-        );
+        // === TASK FILE / OFFSET / LIMIT ===
+        $taskFile = $this->getTaskIdFile($task_id);
 
-        foreach ($this->readCsvRows($this->file, ';') as  $strNum => $fieldsData) {
-            if($strNum === 0) continue; // skip table headers
-            if($this->checkStop($task_id)) {
+        $taskData = [];
+        if (file_exists($taskFile)) {
+            $taskData = json_decode(file_get_contents($taskFile), true) ?: [];
+        }
+
+        $offset = isset($taskData['offset']) ? (int)$taskData['offset'] : 1; // 1 = после заголовка
+        $limit  = isset($taskData['limit']) ? (int)$taskData['limit'] : 20;
+
+        $start = $offset;
+        $end   = $offset + $limit;
+
+        // Initial write if not exists
+        if (empty($taskData)) {
+            File::write(
+                $taskFile,
+                json_encode([
+                    'total'                 => $lines_count,
+                    'current'               => 0,
+                    'current_article_title' => '',
+                    'type'                  => 'import',
+                    'status'                => 'inprogress',
+                    'errors_count'          => 0,
+                    'errors'                => [],
+                    'inserts'               => 0,
+                    'updates'               => 0,
+                    'continues'             => 0,
+                    'offset'                => $offset,
+                    'limit'                 => $limit,
+                ], JSON_UNESCAPED_UNICODE)
+            );
+        } else {
+            $errors    = $taskData['errors'] ?? [];
+            $inserts   = $taskData['inserts'] ?? 0;
+            $updates   = $taskData['updates'] ?? 0;
+            $continues = $taskData['continues'] ?? 0;
+        }
+
+        foreach ($this->readCsvRows($this->file, ';') as $strNum => $fieldsData) {
+
+            if ($strNum === 0) continue; // headers
+            if ($strNum < $start) continue;
+            if ($strNum >= $end) break;
+
+            if ($this->checkStop($task_id)) {
                 $this->saveToLog('Import has been stopped manually by user', Log::INFO);
                 return false;
             }
+
             $prepareEvent = AbstractEvent::create(
                 'onImportPrepareArticleData',
                 [
@@ -618,18 +973,15 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 ]
             );
             $results     = $dispatcher->dispatch($prepareEvent->getName(), $prepareEvent);
-            /** @var array $columns current file columns */
             $columns     = $results['columns'];
             $fieldsData  = $results['article'];
 
-            // check count columns
             if (count($fieldsData) != count($columns)) {
                 $errors[$strNum + 1] = Text::_('PLG_CFI_IMPORT_COLUMN_EXCEPT');
                 $continues++;
 
-                // Save taskId data
                 File::write(
-                    $this->getTaskIdFile($task_id),
+                    $taskFile,
                     json_encode([
                         'total'                 => $lines_count,
                         'current'               => $strNum,
@@ -641,20 +993,21 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                         'inserts'               => $inserts,
                         'updates'               => $updates,
                         'continues'             => $continues,
-                    ],JSON_UNESCAPED_UNICODE)
+                        'offset'                => $offset,
+                        'limit'                 => $limit,
+                    ], JSON_UNESCAPED_UNICODE)
                 );
 
                 continue;
             }
 
-            [$articleData, $fieldsData] =  array_values($this->computeArticleData($columns, $fieldsData));
+            [$articleData, $fieldsData] = array_values($this->computeArticleData($columns, $fieldsData));
 
-
-            // get article instance
             $model = $this->getApplication()
                 ->bootComponent('com_content')
                 ->getMVCFactory()
                 ->createModel('Article', 'Administrator', ['ignore_request' => true]);
+
             Form::addFormPath(JPATH_ADMINISTRATOR . '/components/com_content/forms');
 
             $article      = [];
@@ -665,9 +1018,9 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 if (empty($article) || !$article->id) {
                     unset($article);
                     $errors[$strNum + 1] = Text::sprintf('PLG_CFI_IMPORT_LOAD_ARTICLE', $articleData['id']);
-                    // Save taskId data
+
                     File::write(
-                        $this->getTaskIdFile($task_id),
+                        $taskFile,
                         json_encode([
                             'total'                 => $lines_count,
                             'current'               => $strNum,
@@ -679,8 +1032,11 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                             'inserts'               => $inserts,
                             'updates'               => $updates,
                             'continues'             => $continues,
-                        ],JSON_UNESCAPED_UNICODE)
+                            'offset'                => $offset,
+                            'limit'                 => $limit,
+                        ], JSON_UNESCAPED_UNICODE)
                     );
+
                     continue;
                 } else {
                     $isNewArticle = false;
@@ -698,50 +1054,19 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             } else {
                 $article = array_replace_recursive((array)$article, $articleData);
             }
-            // Save original category id for existing articles and set default category for new articles
-            if($isNewArticle && empty($article['catid'])) {
+
+            if ($isNewArticle && empty($article['catid'])) {
                 $article['catid'] = $this->getCategories()[0];
             }
 
-            // article form
             $form = $model->getForm($article, true);
             $errs = [];
+
             if (!$form) {
                 foreach ($model->getErrors() as $error) {
                     $errs[] = ($error instanceof Exception) ? $error->getMessage() : $error;
                 }
-                if (!empty($errors[$strNum + 1])) {
-                    $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
-                } else {
-                    $errors[$strNum + 1] = Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
-                }
-                unset($model, $article, $errs);
-                $continues++;
-                // Save taskId data
-                File::write(
-                    $this->getTaskIdFile($task_id),
-                    json_encode([
-                            'total'                 => $lines_count,
-                            'current'               => $strNum,
-                            'current_article_title' => '',
-                            'type'                  => 'import',
-                            'status'                => 'inprogress',
-                            'errors_count'          => count($errors),
-                            'errors'                => $errors,
-                            'inserts'               => $inserts,
-                            'updates'               => $updates,
-                            'continues'             => $continues,
-                        ], JSON_UNESCAPED_UNICODE)
-                );
-                continue;
-            }
 
-            // save article item
-            $this->getApplication()->getInput()->set('task', 'save');
-            if ($model->save($article) === false) {
-                foreach ($model->getErrors() as $error) {
-                    $errs[] = ($error instanceof Exception) ? $error->getMessage() : $error;
-                }
                 if (!empty($errors[$strNum + 1])) {
                     $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
                 } else {
@@ -750,9 +1075,9 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
                 unset($model, $article, $errs);
                 $continues++;
-                // Save taskId data
+
                 File::write(
-                    $this->getTaskIdFile($task_id),
+                    $taskFile,
                     json_encode([
                         'total'                 => $lines_count,
                         'current'               => $strNum,
@@ -764,43 +1089,75 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                         'inserts'               => $inserts,
                         'updates'               => $updates,
                         'continues'             => $continues,
+                        'offset'                => $offset,
+                        'limit'                 => $limit,
                     ], JSON_UNESCAPED_UNICODE)
                 );
+
                 continue;
-            } elseif (!empty($errors[$strNum + 1])) {
-                $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVENEW_ARTICLE');
+            }
+
+            $this->getApplication()->getInput()->set('task', 'save');
+
+            if ($model->save($article) === false) {
+                foreach ($model->getErrors() as $error) {
+                    $errs[] = ($error instanceof Exception) ? $error->getMessage() : $error;
+                }
+
+                if (!empty($errors[$strNum + 1])) {
+                    $errors[$strNum + 1] .= '. ' . Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
+                } else {
+                    $errors[$strNum + 1] = Text::_('PLG_CFI_IMPORT_SAVE_ARTICLE') . ': ' . implode('; ', $errs);
+                }
+
+                unset($model, $article, $errs);
+                $continues++;
+
+                File::write(
+                    $taskFile,
+                    json_encode([
+                        'total'                 => $lines_count,
+                        'current'               => $strNum,
+                        'current_article_title' => '',
+                        'type'                  => 'import',
+                        'status'                => 'inprogress',
+                        'errors_count'          => count($errors),
+                        'errors'                => $errors,
+                        'inserts'               => $inserts,
+                        'updates'               => $updates,
+                        'continues'             => $continues,
+                        'offset'                => $offset,
+                        'limit'                 => $limit,
+                    ], JSON_UNESCAPED_UNICODE)
+                );
+
+                continue;
             }
 
             if ($isNewArticle) {
                 $inserts++;
-
-                // get ID for the new article
                 $article['id'] = $model->getState($model->getName() . '.id');
             } else {
                 $updates++;
             }
 
-            // update hits, modified, modified by etc
             $this->updateArticleUneditableData($article, $columns);
 
-            // get article custom fields
             $jsFields = FieldsHelper::getFields('com_content.article', $article, true);
             foreach ($jsFields as $key => $jsField) {
                 $jsFields[$jsField->name] = $jsField;
                 unset($jsFields[$key]);
             }
 
-            // save field's values
             $fieldsErrors = [];
-	        $fieldModel = $this->getApplication()
-		        ->bootComponent('com_fields')
-		        ->getMVCFactory()
-		        ->createModel('Field', 'Administrator', ['ignore_request' => true]);
+            $fieldModel = $this->getApplication()
+                ->bootComponent('com_fields')
+                ->getMVCFactory()
+                ->createModel('Field', 'Administrator', ['ignore_request' => true]);
 
-	        Form::addFormPath(JPATH_ADMINISTRATOR . '/components/com_content/forms');
+            Form::addFormPath(JPATH_ADMINISTRATOR . '/components/com_content/forms');
 
             foreach ($fieldsData as $fieldName => $fieldValue) {
-
                 if (array_key_exists($fieldName, $jsFields)) {
 
                     if (
@@ -812,22 +1169,23 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                     } elseif (str_starts_with($fieldValue, 'array::')) {
                         $fieldValue = json_decode(explode('::', $fieldValue, 2)[1]);
                     }
+
                     if (!$fieldModel->setFieldValue($jsFields[$fieldName]->id, $article['id'], $fieldValue)) {
                         $fieldsErrors[] = $fieldName;
                     }
                 }
             }
+
             if ($fieldsErrors) {
                 $errors[$strNum + 1] = Text::sprintf('PLG_CFI_IMPORT_SAVE_FIELDS', implode(', ', $fieldsErrors));
             }
 
-            // Save taskId data
             File::write(
-                $this->getTaskIdFile($task_id),
+                $taskFile,
                 json_encode([
                     'total'                 => $lines_count,
                     'current'               => $strNum,
-                    'current_article_title' => \htmlspecialchars($article['title']),
+                    'current_article_title' => htmlspecialchars($article['title']),
                     'type'                  => 'import',
                     'status'                => 'inprogress',
                     'errors_count'          => count($errors),
@@ -835,40 +1193,51 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                     'inserts'               => $inserts,
                     'updates'               => $updates,
                     'continues'             => $continues,
+                    'offset'                => $offset,
+                    'limit'                 => $limit,
                 ], JSON_UNESCAPED_UNICODE)
             );
-            // destroy article instance
+
             unset($model, $article, $jsFields, $fieldModel);
         }
 
+        $nextOffset = $end;
+        $isCompleted = $nextOffset >= $lines_count;
+
         File::write(
-            $this->getTaskIdFile($task_id),
+            $taskFile,
             json_encode([
                 'total'                 => $lines_count,
-                'current'               => $lines_count,
+                'current'               => min($nextOffset, $lines_count),
                 'current_article_title' => '',
                 'type'                  => 'import',
-                'status'                => 'completed',
+                'status'                => $isCompleted ? 'completed' : 'inprogress',
                 'errors_count'          => count($errors),
                 'errors'                => $errors,
                 'inserts'               => $inserts,
                 'updates'               => $updates,
                 'continues'             => $continues,
+                'offset'                => $nextOffset,
+                'limit'                 => $limit,
             ], JSON_UNESCAPED_UNICODE)
         );
 
-        // show result
-        $log_data['result'] = Text::sprintf('PLG_CFI_RESULT', $inserts + $updates, $inserts, $updates) .
-            ($errors ? '<br>' . Text::sprintf('PLG_CFI_RESULT_ERROR', $continues) : '');
-        if ($errors) {
-            $log_data['errors'] = $errors;
-        } else {
-            unlink($this->file);
+        if ($isCompleted) {
+            $log_data['result'] = Text::sprintf('PLG_CFI_RESULT', $inserts + $updates, $inserts, $updates) .
+                ($errors ? ' ' . Text::sprintf('PLG_CFI_RESULT_ERROR', $continues) : '');
+
+            if ($errors) {
+                $log_data['errors'] = $errors;
+            } else {
+                unlink($this->file);
+            }
+
+            $this->saveToLog($log_data, Log::INFO);
         }
-        $this->saveToLog($log_data, Log::INFO);
 
         return true;
     }
+
 
     /**
      * Return an array of categories ids
