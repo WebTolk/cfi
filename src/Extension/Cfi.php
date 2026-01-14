@@ -527,7 +527,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         /** @var array $columns current file columns */
         [$columns, $lines_count] = array_values($this->getCsvMetadata($this->file, ';'));
 
-        if ((!in_array('articleid', $columns)) || (!in_array('articletitle', $columns))) {
+        if (!in_array('articleid', $columns)) {
             $log_data['result'] = Text::_('PLG_CFI_IMPORT_NO_COLUMN');
             $this->saveToLog($log_data, Log::ERROR);
             echo new JsonResponse([], Text::_('PLG_CFI_IMPORT_NO_COLUMN'), true);
@@ -1042,8 +1042,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         // article custom fields names
         $article_fields = $this->getApplication()->getInput()->get('article_fields', []);
 
-        $use_tags = $this->getApplication()->getInput()->getBool('use_tags', $this->params->get('use_tags', 0));
-        $use_custom_fields = $this->getApplication()->getInput()->getBool('use_custom_fields', $this->params->get('use_custom_fields', 0));
+        $use_tags = $this->getApplication()->getInput()->getBool('use_tags', false);
+        $use_custom_fields = $this->getApplication()->getInput()->getBool('use_custom_fields',false);
 
         $start = 0;
         while (true) {
@@ -1144,6 +1144,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             $article_props[] = 'tags';
             $this->addTagsToArticles($articles);
         }
+
         $columns = [];
         if ($file_mode == 'w') {
             // make columns

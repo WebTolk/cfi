@@ -69,12 +69,12 @@
 			});
 		}
 
-		const use_tags = document.getElementById('cfi_export_params_use_tags_checkbox').value;
-		formData.append('use_tags', use_tags);
+		const use_tags = document.getElementById('cfi_export_params_use_tags_checkbox');
+		formData.append('use_tags', use_tags.checked ? 1 : 0);
 
 		const use_custom_fields = document.getElementById('cfi_export_params_custom_fields_checkbox');
 		if(use_custom_fields){
-			formData.append('use_custom_fields', use_custom_fields.value);
+			formData.append('use_custom_fields', use_custom_fields.checked ? 1 : 0);
 		}
 
 		Joomla.request({
@@ -381,7 +381,7 @@ console.log('checkTaskStatus......');
      * Main import function
      */
     CFI.import = () => {
-		console.log(CFI);
+
 		if(CFI.stopped === true) {
 			return;
 		}
