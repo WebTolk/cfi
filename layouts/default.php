@@ -11,6 +11,7 @@
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\HTML\Helpers\Select;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\FileLayout;
@@ -27,20 +28,22 @@ use Joomla\CMS\Layout\LayoutHelper;
  *
  */
 extract($displayData);
+
 /**
  * Layout specific data
  *
  * @var array $export_data
- * @var
- * @var
- * @var
- * @var
- * @var
  */
+
 $categories_count = $export_data['categories_count'];
 $total_items = $export_data['total_items'];
 $filter = $export_data['filter'];
 $params = $export_data['params'];
+$jcfields = $export_data['jcfields'];
+$article_fields = $export_data['article_fields'];
+
+$use_tags = boolval($params['params.use_tags']);
+$use_custom_fields = boolval($params['params.use_custom_fields']);
 
 Factory::getApplication()
     ->getDocument()
@@ -75,96 +78,124 @@ Text::script('PLG_CFI_PROCESS_CANCELED_BY_USER');
 	<div class="form-check form-switch">
 		<input class="form-check-input" type="checkbox" value="1" id="progress-switch-convert-cp" role="switch"
 			   name="cficonvert" switch checked aria-checked="true">
-		<label class="form-check-label" for="progress-switch-convert-cp">
+		<label class="form-check-label fs-6" for="progress-switch-convert-cp">
 			<?php
 			echo Text::sprintf('PLG_CFI_CB_UTF_CONVERT', $params['params.cp']); ?>
 		</label>
 	</div>
 </div>
 
-<?php echo HTMLHelper::_('uitab.startTabSet', 'cfi', ['active' => 'export', 'recall' => true, 'breakpoint' => 768]); ?>
+<?php echo HTMLHelper::_('uitab.startTabSet', 'cfi', ['active' => 'export', 'recall' => true, 'breakpoint' => 992]); ?>
 
 <?php echo HTMLHelper::_('uitab.addTab', 'cfi', 'export', Text::_('PLG_CFI_EXPORT')); ?>
 
 
 <div class="row">
-    <div class="col-12 col-md-6 p-3">
+    <div class="col-12 col-lg-6 p-3">
         <p class="mb-1"><strong><?php echo Text::_('JCATEGORIES');?>:</strong> <?php echo $categories_count ?? Text::_('JALL');?>. <strong><?php echo Text::_('JGLOBAL_ARTICLES');?>:</strong> <?php echo $total_items;?> </p>
         <?php if(!$categories_count || $categories_count > 1): ?>
             <div class="alert alert-info"><small><?php echo Text::_('PLG_CFI_EXPORT_CUSTOM_FIELDS_DISCLAIMER');?></small></div>
         <?php endif; ?>
         <?php if(!empty($total_items)): ?>
             <div class="d-flex mb-3">
-                <button class="btn btn-primary btn-lg me-2" id="cfi-export-btn"><?php echo Text::_('Экспорт');?></button>
-                <a href="" class="btn btn-success btn-lg d-none" id="cfi-export-download-btn"><?php echo Text::_('Скачать');?></a>
+                <button class="btn btn-primary btn-lg me-2" id="cfi-export-btn"><?php echo Text::_('PLG_CFI_EXPORT');?></button>
+                <a href="" class="btn btn-success btn-lg d-none" id="cfi-export-download-btn"><?php echo Text::_('PLG_CFI_EXPORT_DOWNLOAD_BTN');?></a>
             </div>
         <?php endif; ?>
+		<div class="export-params border p-2">
+			<h3><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_LABEL');?></h3>
+			<?php if(!empty($params)) :?>
+				<div class="form-check form-check-inline">
+					<input class="form-check-input" type="checkbox" value="<?php echo (string)$use_tags;?>" name="use_tags" id="cfi_export_params_use_tags_checkbox" <?php echo $use_tags ? 'checked' : '';?>>
+					<label class="form-check-label" for="cfi_export_params_use_tags_checkbox">
+						<?php echo Text::_('PLG_CFI_EXPORT_PARAMS_USE_TAGS');?>
+					</label>
+				</div>
+				<?php if($use_custom_fields):?>
+					<div class="form-check form-check-inline">
+						<input class="form-check-input" type="checkbox" value="<?php echo (string)$use_custom_fields;?>" name="use_custom_fields" id="cfi_export_params_custom_fields_checkbox" <?php echo $use_custom_fields ? 'checked' : '';?>>
+						<label class="form-check-label" for="cfi_export_params_custom_fields_checkbox">
+							<?php echo Text::_('PLG_CFI_EXPORT_PARAMS_USE_CUSTOM_FIELDS');?>
+						</label>
+					</div>
+				<?php endif;?>
+
+			<?php endif; ?>
+			<?php if(!empty($filter)) :?>
+			<h5 class="mt-3"><?php echo Text::_('PLG_CFI_EXPORT_FILTER_LABEL');?></h5>
+				<ul class="list-group list-group-flush">
+					<?php if(!empty($filter['filter.search'])): ?>
+						<li class="list-group-item">
+							<?php echo Text::_('COM_CONTENT_FILTER_SEARCH_LABEL');?>: <?php echo $filter['filter.search'];?>
+						</li>
+					<?php endif;?>
+
+					<?php if(!empty($filter['filter.featured'])): ?>
+						<li class="list-group-item">
+							<?php echo Text::_('JFEATURED');?>: <?php echo Text::_('JYES');?>
+						</li>
+					<?php endif;?>
+
+					<?php if(!empty($filter['filter.published'])): ?>
+						<li class="list-group-item">
+							<?php echo Text::_('JPUBLISHED');?>: <?php echo Text::_('JYES');?>
+						</li>
+					<?php endif;?>
+
+					<?php if(!empty($filter['filter.category_id'])): ?>
+						<li class="list-group-item">
+							<?php echo Text::_('JCATEGORIES');?>: <?php echo implode(', ', $filter['filter.category_id']);?>
+						</li>
+					<?php endif;?>
+
+					<?php if(!empty($filter['filter.tag'])): ?>
+						<li class="list-group-item">
+							<?php echo Text::_('JTAG');?>: <?php
+
+							echo implode(' ', array_map(function($item) {
+								return "<span class='badge bg-primary'>$item</span>";
+							}, $filter['filter.tag']));
+							?>
+						</li>
+					<?php endif;?>
+					<?php if(!empty($filter['filter.category_id'])): ?>
+						<li class="list-group-item">
+							<?php echo Text::_('JGLOBAL_LIST_LIMIT');?>: <?php echo $filter['list.limit'];?>
+						</li>
+					<?php endif;?>
+				</ul>
+			<?php endif; ?>
+		</div>
     </div>
-    <div class="col-12 col-md-6 p-3 border">
-        <h3><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_LABEL');?></h3>
-        <?php if(!empty($params)) :?>
-            <p>
-                <span class="badge bg-primary"><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_USE_TAGS');?></span><span class="badge bg-success"><?php echo !empty($params['params.use_tags']) ? Text::_('JYES') : '';?></span>
-                <span class="badge bg-primary"><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_USE_CUSTOM_FIELDS');?></span><span class="badge bg-success"><?php echo !empty($params['params.use_custom_fields']) ? Text::_('JYES') : '';?></span>
-            </p>
-        <?php endif; ?>
-        <?php if(!empty($filter)) :?>
-            <ul class="list-group list-group-flush">
-                <?php if(!empty($filter['filter.search'])): ?>
-                    <li class="list-group-item">
-                        <?php echo Text::_('COM_CONTENT_FILTER_SEARCH_LABEL');?>: <?php echo $filter['filter.search'];?>
-                    </li>
-                <?php endif;?>
+	<div class="col-12 <?php echo ($use_custom_fields ? 'col-lg-3' : 'col-lg-6');?> p-3">
+		<h5><?php echo Text::_('PLG_CFI_EXPORT_ARTICLE_PROPS_LABEL');?></h5>
 
-                <?php if(!empty($filter['filter.featured'])): ?>
-                    <li class="list-group-item">
-                        <?php echo Text::_('JFEATURED');?>: <?php echo Text::_('JYES');?>
-                    </li>
-                <?php endif;?>
-
-                <?php if(!empty($filter['filter.published'])): ?>
-                    <li class="list-group-item">
-                        <?php echo Text::_('JPUBLISHED');?>: <?php echo Text::_('JYES');?>
-                    </li>
-                <?php endif;?>
-
-                <?php if(!empty($filter['filter.category_id'])): ?>
-                    <li class="list-group-item">
-                        <?php echo Text::_('JCATEGORIES');?>: <?php echo implode(', ', $filter['filter.category_id']);?>
-                    </li>
-                <?php endif;?>
-
-                <?php if(!empty($filter['filter.tag'])): ?>
-                    <li class="list-group-item">
-                        <?php echo Text::_('JTAG');?>: <?php
-
-                        echo implode(' ', array_map(function($item) {
-                            return "<span class='badge bg-primary'>$item</span>";
-                        }, $filter['filter.tag']));
-                        ?>
-                    </li>
-                <?php endif;?>
-                <?php if(!empty($filter['filter.category_id'])): ?>
-                    <li class="list-group-item">
-                        <?php echo Text::_('JGLOBAL_LIST_LIMIT');?>: <?php echo $filter['list.limit'];?>
-                    </li>
-                <?php endif;?>
-
-            </ul>
-        <?php endif; ?>
-        <?php if(!empty($params) && !empty($params['params.article_props'])) :?>
-                <details>
-                    <summary><?php echo Text::_('PLG_CFI_EXPORT_PARAMS_ARTICLE_PROPS_LIST');?></summary>
-                    <ul>
-                        <?php
-                        echo implode('', array_map(function ($prop){
-                            return '<li>'.$prop.'</li>';
-                        }, $params['params.article_props']));
-                         ?>
-                    </ul>
-                </details>
-        <?php endif; ?>
-    </div>
+		<?php
+		echo Select::genericlist(
+				data:$article_fields,
+				name:'cfi_export_article_props[]',
+				attribs: 'multiple="multiple" class="form-select h-100"',
+				optKey: 'value',
+				optText: 'text',
+				selected: $params['params.article_props'],
+				idtag: 'cfi_export_article_props');
+		?>
+	</div>
+	<?php if ($use_custom_fields): ?>
+	<div class="col-12 col-lg-3 p-3">
+		<h5><?php echo Text::_('PLG_CFI_EXPORT_ARTICLE_FIELDS_LABEL');?> <?php echo !empty(count($jcfields)) ? '(' . count($jcfields) . ')' : ''; ?></h5>
+		<?php
+		echo Select::genericlist(
+				data:$jcfields,
+				name:'cfi_export_article_fields[]',
+				attribs: 'multiple="multiple" class="form-select h-100"',
+				optKey: 'value',
+				optText: 'text',
+				selected: [],
+				idtag: 'cfi_export_article_fields');
+		?>
+	</div>
+	<?php endif; ?>
 </div>
 
 <?php echo HTMLHelper::_('uitab.endTab'); ?>

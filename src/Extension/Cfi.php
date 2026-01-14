@@ -27,6 +27,7 @@ use Joomla\CMS\Plugin\PluginHelper;
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\Session\Session;
 use Joomla\CMS\Toolbar\Button\BasicButton;
+use Joomla\CMS\Toolbar\Button\PopupButton;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\User\CurrentUserTrait;
 use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
@@ -208,23 +209,18 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 ]
             )
             ->icon('fa-solid fa-file-export');
+
         $toolbar->appendButton($button);
     }
 
     public function onAjaxCfi(AjaxEvent $event)
     {
-        /**
-         * Тут разрулить по
-         * action = view
-         * action = import
-         * action = export
-         */
 
         if (!$this->getApplication()->isClient('administrator')) {
             return;
         }
-
-        Session::checkToken('get') or die(Text::_('JINVALID_TOKEN'));
+        // We need both GET and POST tokens check for different actions
+        (Session::checkToken('get') || Session::checkToken('post')) or die(Text::_('JINVALID_TOKEN'));
 
         $action  = $this->getApplication()->getInput()->getString('action', 'viewModal');
         $task_id = $this->getApplication()->getInput()->getString('task_id', '');
@@ -255,43 +251,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 break;
             case 'viewModal':
             default:
-                $model         = $this->getApplication()->bootComponent('com_content')->getMVCFactory()->createModel(
-                    'Articles'
-                );
-                $categories    = $model->getState('filter.category_id');
-                $tag_ids       = $model->getState('filter.tag');
-                $article_props = $this->params->get(
-                    'article_fields',
-                    ['id', 'title', 'language', 'introtext', 'fulltext']
-                );
-                $export_data   = [
-                    'total_items'      => $model->getTotal(),
-                    'categories_count' => (!empty($categories) ? count($categories) : $categories),
-                    'filter'           => [
-                        'filter.search'      => $model->getState('filter.search'),
-                        'filter.featured'    => $model->getState('filter.featured'),
-                        'filter.published'   => $model->getState('filter.published'),
-                        'filter.category_id' => !empty($categories) ? $this->getCategoryTitles($categories) : [],
-                        'filter.tag'         => !empty($tag_ids) ? $this->getTagTitles($tag_ids) : [],
-                        'list.limit'         => $model->getState('list.limit'),
-                    ],
-                    'params'           => [
-                        'params.use_tags'          => $this->params->get('use_tags', 0),
-                        'params.use_custom_fields' => $this->params->get('use_custom_fields', 0),
-                        'params.article_props'     => $article_props,
-                        'params.cp'                => $this->params->get('cp', 'CP1251'),
-                    ],
-                ];
-
-                $this->getApplication()->getLanguage()->load('com_content');
-                $this->getApplication()->getLanguage()->load('plg_system_cfi', JPATH_ADMINISTRATOR);
-                echo LayoutHelper::render(
-                    'default',
-                    ['export_data' => $export_data],
-                    JPATH_SITE . '/layouts/plugins/system/cfi'
-                );
-
-                break;
+                $this->getViewModal();
+            break;
         }
     }
 
@@ -1076,6 +1037,14 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      */
     private function exportArticles(string $task_id): void
     {
+        // article properties like id, title, alias etc
+        $article_props = $this->getApplication()->getInput()->get('article_props', []);
+        // article custom fields names
+        $article_fields = $this->getApplication()->getInput()->get('article_fields', []);
+
+        $use_tags = $this->getApplication()->getInput()->getBool('use_tags', $this->params->get('use_tags', 0));
+        $use_custom_fields = $this->getApplication()->getInput()->getBool('use_custom_fields', $this->params->get('use_custom_fields', 0));
+
         $start = 0;
         while (true) {
             if($this->checkStop($task_id)) {
@@ -1099,7 +1068,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 json_encode(['total' => $total, 'current' => $start, 'type' => 'export', 'status' => 'inprogress'])
             );
 
-            $this->saveToCSV($articles, $task_id);
+            $this->saveToCSV($articles, $task_id, $article_props, $article_fields, $use_tags, $use_custom_fields);
 
             if ($page_current == $page_total) {
                 break;
@@ -1134,15 +1103,20 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     /**
      * Save data to CSV file
      *
-     * @param $articles
-     * @param $task_id
+     * @param array   $articles        Articles data from database
+     * @param string  $task_id
+     * @param array   $article_props   articles properties like id, title, alias etc
+     * @param array   $article_fields  articles custom fields names
+     * @param bool    $use_tags        include article tags
+     * @param bool    $use_custom_fields  include article custom fields
+     *
      *
      * @throws Exception
-     * @return true
+     * @return bool
      *
      * @since 2.0.0
      */
-    private function saveToCSV($articles, $task_id)
+    private function saveToCSV(array $articles, string $task_id, array $article_props, array $article_fields, bool $use_tags, bool $use_custom_fields):bool
     {
         if($this->checkStop($task_id)) {
             $this->saveToLog('Import has been stopped manually by user', Log::INFO);
@@ -1162,9 +1136,11 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             throw new Exception(Text::_('PLG_CFI_EXPORTFILE_CREATE'), 500);
         }
 
-        $article_props = $this->params->get('article_fields', ['id', 'title', 'catid', 'introtext', 'fulltext']);
+        if(empty($article_props)){
+            $article_props = $this->params->get('article_fields', ['id', 'title', 'catid', 'introtext', 'fulltext']);
+        }
 
-        if ($this->params->get('use_tags', 0)) {
+        if ($use_tags) {
             $article_props[] = 'tags';
             $this->addTagsToArticles($articles);
         }
@@ -1175,9 +1151,13 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 return 'article' . $article_prop;
             }, $article_props);
 
-            $jsFields = FieldsHelper::getFields('com_content.article', $articles[0], true);
-            foreach ($jsFields as $jsField) {
-                $columns[] = $jsField->name;
+            if($use_custom_fields) {
+                $jsFields = FieldsHelper::getFields('com_content.article', $articles[0], true);
+                foreach ($jsFields as $jsField) {
+                    if(in_array($jsField->name,$article_fields)) {
+                        $columns[] = $jsField->name;
+                    }
+                }
             }
         }
 
@@ -1216,9 +1196,10 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 }
             }
 
-            if ($this->params->get('use_custom_fields', 0)) {
+            if($use_custom_fields) {
                 $jsFields = FieldsHelper::getFields('com_content.article', $article, true);
                 foreach ($jsFields as $jsField) {
+                    if(!in_array($jsField->name,$article_fields)) continue;
                     if (
                         $jsField->type === 'checkboxes' ||
                         in_array($jsField->type, array_keys($this->fieldPlugins))
@@ -1642,6 +1623,68 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'columns' => $columns,
             'total' => $total
         ];
+    }
+
+    /**
+     * Get a modal iframe view
+     *
+     * @since 2.0.0
+     */
+    private function getViewModal()
+    {
+        $model = $this->getApplication()
+            ->bootComponent('com_content')
+            ->getMVCFactory()->createModel('Articles');
+        $categories  = $fields_categories = $model->getState('filter.category_id', []);
+
+        $tag_ids       = $model->getState('filter.tag');
+        $article_props = $this->params->get(
+            path: 'article_fields',
+            default: ['id', 'title', 'language', 'introtext', 'fulltext']
+        );
+
+        $fake_item = new \stdClass();
+        $fake_item->fieldscatid = $fields_categories;
+
+        $jcfields = [];
+        if (!empty($fields = FieldsHelper::getFields('com_content.article', $fake_item, false, null, false))) {
+            foreach ($fields as $field) {
+                $jcfields[$field->name] =  $field->title;
+            }
+        }
+
+        $article_fields = array_keys($this->getImportArticleTemplate());
+        $article_fields = array_combine($article_fields, $article_fields);
+        $export_data   = [
+            'total_items'      => $model->getTotal(),
+            'categories_count' => (!empty($categories) ? count($categories) : $categories),
+            'jcfields' => $jcfields,
+            'article_fields' => $article_fields,
+            'filter'           => [
+                'filter.search'      => $model->getState('filter.search'),
+                'filter.featured'    => $model->getState('filter.featured'),
+                'filter.published'   => $model->getState('filter.published'),
+                'filter.category_id' => !empty($categories) ? $this->getCategoryTitles($categories) : [],
+                'filter.tag'         => !empty($tag_ids) ? $this->getTagTitles($tag_ids) : [],
+                'list.limit'         => $model->getState('list.limit'),
+            ],
+            'params'           => [
+                'params.use_tags'          => $this->params->get('use_tags', 0),
+                'params.use_custom_fields' => $this->params->get('use_custom_fields', 0),
+                'params.article_props'     => $article_props,
+                'params.cp'                => $this->params->get('cp', 'CP1251'),
+            ],
+        ];
+
+        $this->getApplication()->getLanguage()->load('com_content');
+        $this->getApplication()->getLanguage()->load('plg_system_cfi', JPATH_ADMINISTRATOR);
+        echo LayoutHelper::render(
+            'default',
+            ['export_data' => $export_data],
+            JPATH_SITE . '/layouts/plugins/system/cfi'
+        );
+
+
     }
 }
 

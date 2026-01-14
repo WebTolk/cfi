@@ -24,7 +24,7 @@
         Joomla.request({
             // Find the action url associated with the form - we need to add the token to this
             url: startTaskUrl,
-            method: 'GET'
+            method: 'POST'
         });
 		CFI.enableStopBtn();
     }
@@ -38,7 +38,10 @@
         CFI.taskId = Date.now();
         CFI.activeTaskType = 'export';
         CFI.clearProgressBar();
+        CFI.hideDownloadBtn();
+        CFI.disableExportBtn();
         const downloadBtn = document.getElementById('cfi-export-download-btn');
+
         downloadBtn.classList.add('d-none');
         CFI.startTask();
         const convertSwitch = document.getElementById('progress-switch-convert-cp');
@@ -47,10 +50,37 @@
         if(convertSwitch && convertSwitch.checked === true) {
             exportUrl += '&cficonvert=1';
         }
-        Joomla.request({
-            // Find the action url associated with the form - we need to add the token to this
+
+		const article_props = document.getElementById('cfi_export_article_props');
+
+		const selectedArticleProps = Array.from(article_props.selectedOptions).map(option => option.value);
+		const formData = new FormData();
+		// Article properties like title, alias, etc
+		selectedArticleProps.forEach(value => {
+			formData.append('article_props[]', value);
+		});
+
+		const article_fields = document.getElementById('cfi_export_article_fields');
+		const exportCustomFieldsCheckbox = document.getElementById('cfi_export_params_custom_fields_checkbox');
+		if(article_fields && exportCustomFieldsCheckbox && exportCustomFieldsCheckbox.checked === true) {
+			const selectedArticleFields = Array.from(article_fields.selectedOptions).map(option => option.value);
+			selectedArticleFields.forEach(value => {
+				formData.append('article_fields[]', value);
+			});
+		}
+
+		const use_tags = document.getElementById('cfi_export_params_use_tags_checkbox').value;
+		formData.append('use_tags', use_tags);
+
+		const use_custom_fields = document.getElementById('cfi_export_params_custom_fields_checkbox');
+		if(use_custom_fields){
+			formData.append('use_custom_fields', use_custom_fields.value);
+		}
+
+		Joomla.request({
             url: exportUrl,
-            method: 'GET',
+            method: 'POST',
+            data: formData,
             onBefore: (xhr) => {
                 CFI.checkTaskStatus(CFI.taskId);
             },
@@ -66,6 +96,7 @@
 						CFI.taskInterval = null;
 					}
 					CFI.disableStopBtn();
+					CFI.showDownloadBtn();
                     console.error('CFI: '+ response.message);
                     Joomla.renderMessages({
                         error: [response.message]
@@ -81,11 +112,15 @@
 					clearInterval(CFI.taskInterval);
 					CFI.taskInterval = null;
 				}
-				CFI.disableStopBtn();
+				CFI.hideDownloadBtn();
                 Joomla.renderMessages({
                     error: [Joomla.Text._('PLG_CFI_EXPORT_ERROR')]
                 });
-            }
+            },
+			onComplete: function (xhr){
+				CFI.disableStopBtn();
+				CFI.enableExportBtn();
+			}
         });
 
     }
@@ -114,7 +149,7 @@ console.log('checkTaskStatus......');
                 Joomla.request({
                     // Find the action url associated with the form - we need to add the token to this
                     url: checkTaskStatusUrl,
-                    method: 'GET',
+                    method: 'POST',
                     onSuccess: response => {
 
                         response = JSON.parse(response);
@@ -276,6 +311,44 @@ console.log('checkTaskStatus......');
     }
 
 	/**
+	 * Disable export button
+	 */
+	CFI.disableExportBtn = () => {
+        const exportBtn = document.getElementById('cfi-export-btn');
+        exportBtn.disabled = true;
+    }
+
+	/**
+	 * Enable export button
+	 */
+	CFI.enableExportBtn = () => {
+        const exportBtn = document.getElementById('cfi-export-btn');
+        if(exportBtn.disabled === true) {
+			exportBtn.disabled = false;
+        }
+		exportBtn.addEventListener('click', CFI.export);
+    }
+
+	/**
+	 * Hide download export button
+	 */
+	CFI.hideDownloadBtn = () => {
+        const downloadBtn = document.getElementById('cfi-export-download-btn');
+        downloadBtn.classList.add('d-none');
+    }
+
+	/**
+	 * Show download export button
+	 */
+	CFI.showDownloadBtn = () => {
+        const downloadBtn = document.getElementById('cfi-export-download-btn');
+        if(downloadBtn.classList.contains('d-none') === true) {
+			downloadBtn.classList.remove('d-none');
+        }
+		// downloadBtn.addEventListener('click', CFI.export);
+    }
+
+	/**
 	 * make ajax request to stop task
 	 */
 	CFI.stopTask = () => {
@@ -283,7 +356,7 @@ console.log('checkTaskStatus......');
 		console.log('stopTask....');
 		Joomla.request({
 			url: stopUrl,
-			method: 'GET',
+			method: 'POST',
 			onSuccess: response => {
 				console.log('stop request ....');
 				if(response === '') {
@@ -328,7 +401,7 @@ console.log('checkTaskStatus......');
         Joomla.request({
             // Find the action url associated w ith the form - we need to add the token to this
             url: importUrl,
-            method: 'GET',
+            method: 'POST',
             onBefore: (xhr) => {
                 CFI.checkTaskStatus(CFI.taskId);
             },
@@ -453,6 +526,16 @@ console.log('init...');
         if(downloadBtn){
             downloadBtn.addEventListener('click', CFI.clearProgressBar);
         }
+
+		const exportCustomFieldsCheckbox = document.getElementById('cfi_export_params_custom_fields_checkbox');
+		const articleFieldsSelect = document.getElementById('cfi_export_article_fields');
+		exportCustomFieldsCheckbox.addEventListener('change', function() {
+			if (!this.checked) {
+				articleFieldsSelect.setAttribute('disabled', 'disabled');
+			} else {
+				articleFieldsSelect.removeAttribute('disabled');
+			}
+		});
 
         const importBtn = document.getElementById('cfi-import-btn');
         if(importBtn) {
