@@ -36,6 +36,7 @@ extract($displayData);
  */
 
 $categories_count = $export_data['categories_count'];
+
 $total_items = $export_data['total_items'];
 $filter = $export_data['filter'];
 $params = $export_data['params'];
@@ -158,7 +159,7 @@ Text::script('PLG_CFI_PROCESS_CANCELED_BY_USER');
 							?>
 						</li>
 					<?php endif;?>
-					<?php if(!empty($filter['filter.category_id'])): ?>
+					<?php if(!empty($filter['list.limit'])): ?>
 						<li class="list-group-item">
 							<?php echo Text::_('JGLOBAL_LIST_LIMIT');?>: <?php echo $filter['list.limit'];?>
 						</li>

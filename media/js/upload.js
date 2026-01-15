@@ -1,3 +1,5 @@
+window.CfiUpload = window.CfiUpload || {};
+
 (CfiUpload => {
 
 	CfiUpload.init = () => {
@@ -192,5 +194,3 @@
 	}
 
 })(CfiUpload);
-
-window.CfiUpload = window.CfiUpload || {};

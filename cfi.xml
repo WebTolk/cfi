@@ -32,8 +32,8 @@
             <fieldset name="basic">
                 <field type="list"
                        name="article_fields"
-                       label="article_fields"
-                       description="article_fields_desc"
+                       label="PLG_CFI_EXPORT_PARAMS_ARTICLE_PROPS_LIST"
+                       description="PLG_CFI_EXPORT_PARAMS_ARTICLE_PROPS_LIST_DESC"
                        layout="joomla.form.field.list-fancy-select"
                        multiple="true"
                        default='{"0":"id","1":"title","2":"catid","3":"introtext","4":"fulltext"}'
@@ -83,7 +83,7 @@
                 </field>
                 <field type="radio"
                        name="use_custom_fields"
-                       label="use_custom_fields"
+                       label="PLG_CFI_EXPORT_PARAMS_USE_CUSTOM_FIELDS"
                        layout="joomla.form.field.radio.switcher"
                        default="1"
                        >
@@ -92,7 +92,7 @@
                 </field>
                 <field type="radio"
                        name="use_tags"
-                       label="use_tags"
+                       label="PLG_CFI_EXPORT_PARAMS_USE_TAGS"
                        layout="joomla.form.field.radio.switcher"
                        default="0"
                 >
@@ -171,15 +171,30 @@
                     <option value="UTF-32BE">UTF-32BE</option>
                     <option value="UTF-32LE">UTF-32LE</option>
                 </field>
-                <field name="showdesc" type="radio"
-                       label="PLG_CFI_PARAM_SHOWDESC"
-                       class="btn-group btn-group-yesno"
-                       default="1">
-                    <option value="0">JNO</option>
-                    <option value="1">JYES</option>
-                </field>
-                <field name="xmldesc" type="note" label="PLG_CFI_DESC_FORMAT_LABEL" description="PLG_CFI_DESC_FORMAT"/>
-                <field name="desc" type="note" label="PLG_CFI_DESC_WARN_LABEL" description="PLG_CFI_DESC_WARN"/>
+                <field name="cfi_desc_full"
+                       type="note"
+                       heading="h2"
+                       label="PLG_CFI_DESC_FULL_LABEL"
+                       description="PLG_CFI_DESC_FULL_DESC"
+                       class="alert alert-info"/>
+                <field name="cfi_desc_full_export"
+                       type="note"
+                       heading="h2"
+                       label="PLG_CFI_DESC_FULL_EXPORT_LABEL"
+                       description="PLG_CFI_DESC_FULL_EXPORT"
+                       class="alert alert-info"/>
+                <field name="cfi_desc_full_import"
+                       type="note"
+                       heading="h2"
+                       label="PLG_CFI_DESC_FULL_IMPORT_LABEL"
+                       description="PLG_CFI_DESC_FULL_IMPORT"
+                       class="alert alert-info"/>
+                <field name="cfi_desc_full_for_developers"
+                       type="note"
+                       heading="h2"
+                       label="PLG_CFI_DESC_FULL_FOR_DEVELOPERS_LABEL"
+                       description="PLG_CFI_DESC_FULL_FOR_DEVELOPERS"
+                       class="alert alert-info"/>
             </fieldset>
         </fields>
     </config>

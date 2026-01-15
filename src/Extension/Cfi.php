@@ -1649,7 +1649,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $article_fields = array_combine($article_fields, $article_fields);
         $export_data   = [
             'total_items'      => $model->getTotal(),
-            'categories_count' => (!empty($categories) ? count($categories) : $categories),
+            'categories_count' => (!empty($categories) ? count($categories) : Text::_('JALL')),
             'jcfields' => $jcfields,
             'article_fields' => $article_fields,
             'filter'           => [
