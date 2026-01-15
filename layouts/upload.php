@@ -47,8 +47,6 @@ Text::script('PLG_CFI_IMPORT_UPLOAD_WARN_UPLOADERROR');
 $maxSizeBytes =  FilesystemHelper::getFileUploadMaxSize();
 $maxSize      = HTMLHelper::_('number.bytes', $maxSizeBytes);
 
-// Popover
-HTMLHelper::_('bootstrap.popover', 'span.icon-trash');
 ?>
 
 <div class="upload-field">

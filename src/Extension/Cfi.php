@@ -1039,6 +1039,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     {
         // article properties like id, title, alias etc
         $article_props = $this->getApplication()->getInput()->get('article_props', []);
+        // add id if it isn't exists
+        if(!in_array('id', $article_props, true)) array_unshift($article_props,'id');
         // article custom fields names
         $article_fields = $this->getApplication()->getInput()->get('article_fields', []);
 

@@ -1,21 +1,44 @@
 /**
- * @package    System - CFI
+ * @package     System - CFI
  * @subpackage  System.cfi
  * @copyright   Copyright (C) Sergey Tolkachyov. All rights reserved.
  * @license     GNU General Public License version 3 or later; see http://www.gnu.org/licenses/gpl-3.0.txt
+ * @author      Sergey Tolkachyov <info@web-tolk.ru
+ * @link        http://web-tolk.ru
  */
 
 ((CFI) => {
     'use strict';
 
+	/**
+	 * Cuerrent task id. Unix timestamp
+	 * @type {string}
+	 */
     CFI.taskId = '';
 
+	/**
+	 * Task type. export or import
+	 */
     CFI.activeTaskType = 'export';
 
+	/**
+	 * Has we an error for current task?
+	 *
+	 * @type {boolean}
+	 */
     CFI.hasError = false;
 
+	/**
+	 * Task has been stopped or not
+	 * @type {boolean}
+	 */
 	CFI.stopped = false;
 
+	/**
+	 * Task interval for global access
+	 *
+	 * @type {null}
+	 */
 	CFI.taskInterval = null;
 
     CFI.startTask = () => {
@@ -33,17 +56,14 @@
      * Main export function
      */
     CFI.export = () => {
-		console.log(CFI);
-        console.log('export......');
         CFI.taskId = Date.now();
         CFI.activeTaskType = 'export';
         CFI.clearProgressBar();
         CFI.hideDownloadBtn();
         CFI.disableExportBtn();
-        const downloadBtn = document.getElementById('cfi-export-download-btn');
-
-        downloadBtn.classList.add('d-none');
+        CFI.hideDownloadBtn();
         CFI.startTask();
+
         const convertSwitch = document.getElementById('progress-switch-convert-cp');
 
         let exportUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=export_articles&' + Joomla.getOptions('csrf.token') + '=1&task_id='+CFI.taskId;
@@ -85,10 +105,8 @@
                 CFI.checkTaskStatus(CFI.taskId);
             },
             onSuccess: response => {
-                console.log('export request ....');
                 response = JSON.parse(response);
                 if (response.success === false) {
-
                     CFI.hasError = true;
 					CFI.stopped = true;
 					if (CFI.taskInterval) {
@@ -126,17 +144,17 @@
     }
 
     /**
+	 * Check task status in backend every 1 second
+	 *
      * @param {string} taskId
      */
     CFI.checkTaskStatus = (taskId) => {
 		if(CFI.stopped === true) {
 			return;
 		}
-console.log('checkTaskStatus......');
         const checkTaskStatusUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=check_status&' + Joomla.getOptions('csrf.token') + '=1&task_id='+taskId;
-
 		CFI.taskInterval = setInterval(async () => {
-            console.log('checkTaskStatus - checkInterval......');
+
             if(CFI.hasError === true || CFI.stopped === true) {
 				clearInterval(CFI.taskInterval);
 				CFI.taskInterval = null;
@@ -151,7 +169,6 @@ console.log('checkTaskStatus......');
                     url: checkTaskStatusUrl,
                     method: 'POST',
                     onSuccess: response => {
-
                         response = JSON.parse(response);
                         let status = response.data[0];
                         if(status.message) {
@@ -269,10 +286,7 @@ console.log('checkTaskStatus......');
      * @param uploadData
      */
     CFI.addUploadData = (uploadData) => {
-        console.log('uploadData from CFI');
-        console.log(uploadData);
         if(uploadData){
-
             const uploadFileInfo = document.getElementById('cfi-import-upload-file-info');
             if(uploadFileInfo.classList.contains('d-none')) {
                 uploadFileInfo.classList.remove('d-none')
@@ -353,12 +367,10 @@ console.log('checkTaskStatus......');
 	 */
 	CFI.stopTask = () => {
 		let stopUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=stop_task&' + Joomla.getOptions('csrf.token') + '=1&task_id='+CFI.taskId;
-		console.log('stopTask....');
 		Joomla.request({
 			url: stopUrl,
 			method: 'POST',
 			onSuccess: response => {
-				console.log('stop request ....');
 				if(response === '') {
 					console.warn('CFI: CFI.Import() got an empty response for ajax request.')
 				}
@@ -385,7 +397,7 @@ console.log('checkTaskStatus......');
 		if(CFI.stopped === true) {
 			return;
 		}
-        console.log('import......');
+
         CfiUpload.resetArea();
         CFI.activeTaskType = 'import';
         CFI.clearProgressBar();
@@ -406,7 +418,7 @@ console.log('checkTaskStatus......');
                 CFI.checkTaskStatus(CFI.taskId);
             },
             onSuccess: response => {
-                console.log('import request ....');
+
                 if(response === '') {
                     console.warn('CFI: CFI.Import() got an empty response for ajax request.')
                     return;
@@ -511,10 +523,10 @@ console.log('checkTaskStatus......');
 
 
     /**
-     * Начало...
+     * Let's start to work
      */
     CFI.init = () => {
-console.log('init...');
+
         CFI.hasError = false;
         CFI.stopped = false;
         const exportBtn = document.getElementById('cfi-export-btn');
@@ -548,7 +560,6 @@ console.log('init...');
         }
 
 		CFI.clearProgressBar();
-
     }
 
     if (document.readyState === 'loading') {
