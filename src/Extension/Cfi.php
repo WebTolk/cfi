@@ -27,7 +27,6 @@ use Joomla\CMS\Plugin\PluginHelper;
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\Session\Session;
 use Joomla\CMS\Toolbar\Button\BasicButton;
-use Joomla\CMS\Toolbar\Button\PopupButton;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\User\CurrentUserTrait;
 use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
@@ -39,6 +38,8 @@ use Joomla\Filesystem\File;
 use Joomla\Filesystem\Path;
 use Joomla\Filter\OutputFilter;
 use Joomla\Registry\Registry;
+
+use RuntimeException;
 
 use function defined;
 use function fputcsv;
@@ -118,7 +119,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         ];
 
 
-        $user       = Factory::getApplication()->getIdentity();
+        $user       = $this->getCurrentUser();
         $this->user = $user->id . ':' . $user->username;
 
         $this->cp = $this->params->get('cp', 'CP1251');
@@ -149,10 +150,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         return [
             'onAfterDispatch' => 'onAfterDispatch',
             'onAjaxCfi'       => 'onAjaxCfi',
-            //            'onRadicalMartGetProductFieldXml'    => 'onRadicalMartGetProductFieldXml',
-            //            'onRadicalMartGetProductsFieldValue' => 'onRadicalMartGetProductsFieldValue',
-            //            'onRadicalMartGetProductFieldValue'  => 'onRadicalMartGetProductFieldValue',
-            //            'onRadicalMartAfterGetFieldForm'     => 'onRadicalMartAfterGetFieldForm',
         ];
     }
 
@@ -213,6 +210,13 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $toolbar->appendButton($button);
     }
 
+    /**
+     * @param   AjaxEvent  $event
+     *
+     *
+     * @throws Exception
+     * @since 1.0.0
+     */
     public function onAjaxCfi(AjaxEvent $event)
     {
 
@@ -290,7 +294,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     /**
      * Get absolute path to stop task file
      *
-     * @param   string  $task_id
+     * @param  string  $task_id
      *
      * @return string
      *
@@ -301,19 +305,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         return Path::clean(sprintf($this->stop_file, $task_id));
     }
 
-    /**
-     * Create a temporary file for stop task
-     *
-     * @param   string  $task_id
-     *
-     * @return void
-     *
-     * @since 2.0.0
-     */
-//    private function createStopTaskFile(string $task_id): void
-//    {
-//        File::write($this->getStopTaskFile($task_id), '');
-//    }
 
     /**
      * Stop task by task id
@@ -326,7 +317,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     private function stopTask(string $task_id): void
     {
         File::write($this->getStopTaskFile($task_id), '');
-//        $this->createStopTaskFile($task_id);
     }
 
     /**
@@ -425,7 +415,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         if ($userfile['error'] && ($userfile['error'] == UPLOAD_ERR_NO_TMP_DIR)) {
             echo new JsonResponse(
                 '',
-                Text::_('PLG_CFI_IMPORT_UPLOAD_WARN_UPLOADERROR') . '<br>' . Text::_(
+                Text::_('PLG_CFI_IMPORT_UPLOAD_WARN_UPLOADERROR') . ' ' . Text::_(
                     'PLG_CFI_IMPORT_UPLOAD_WARN_PHPUPLOADNOTSET'
                 ),
                 true
@@ -438,7 +428,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         if ($userfile['error'] && ($userfile['error'] == UPLOAD_ERR_INI_SIZE)) {
             echo new JsonResponse(
                 '',
-                Text::_('PLG_CFI_IMPORT_UPLOAD_WARN_UPLOADERROR') . '<br>' . Text::_(
+                Text::_('PLG_CFI_IMPORT_UPLOAD_WARN_UPLOADERROR') . ' ' . Text::_(
                     'PLG_CFI_IMPORT_UPLOAD_WARN_SMALLUPLOADSIZE'
                 ),
                 true
@@ -831,8 +821,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         return true;
     }
 
-
-
     /**
      * Return an array of categories ids
      *
@@ -1087,7 +1075,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         $download_url = new Uri(Uri::root());
         $download_url->setPath(str_replace(JPATH_SITE, '', $this->file));
 
-        // Завершаем для фронта.
+        // Complete task for frontend
         File::write(
             $this->getTaskIdFile($task_id),
             json_encode(
@@ -1233,10 +1221,10 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
      *
      * @param $articles
      *
-     *
+     * @return void
      * @since 2.0.0
      */
-    private function addTagsToArticles(&$articles)
+    private function addTagsToArticles(&$articles):void
     {
         $tagsHelper = new TagsHelper();
         foreach ($articles as $item) {
@@ -1247,7 +1235,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     /**
      * Get categories titles for display in export params in admin panel
      *
-     * @param   array  $cat_ids
+     * @param  array  $cat_ids
      *
      * @return array
      *
@@ -1564,7 +1552,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     {
         $handle = fopen($filename, 'r');
         if (!$handle) {
-            throw new \RuntimeException("Не удалось открыть файл: $filename");
+            throw new RuntimeException("Не удалось открыть файл: $filename");
         }
 
         // Check and skip BOM (UTF-8)
@@ -1584,19 +1572,20 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     }
 
     /**
-     * Читает заголовки CSV-файла и подсчитывает количество строк данных (без строки заголовков).
+     * Reads the headers of the CSV file and counts the number of data lines (without the header line).
      *
-     * @param string $filename Путь к CSV-файлу.
-     * @param string $delimiter Символ-разделитель колонок (по умолчанию ';').
-     * @return array Массив с ключами 'headers' (массив заголовков) и 'data_rows_count' (количество строк данных).
-     * @throws \RuntimeException Если не удалось открыть файл или прочитать заголовки.
+     * @param   string  $filename   Absoulite path to the CSV file.
+     * @param   string  $delimiter  The column separator character (default is `;`).
+     *
+     * @throws RuntimeException If it was not possible to open the file or read the headers.
+     * @return array An array with the keys 'headers' (array of headers) and 'data_rows_count' (number of rows of data).
      * @since 2.0.0
      */
     private function getCsvMetadata(string $filename, string $delimiter = ';'): array
     {
         $handle = fopen($filename, 'r');
         if (!$handle) {
-            throw new \RuntimeException("Не удалось открыть файл: $filename");
+            throw new RuntimeException(Text::sprintf('PLG_CFI_IMPORT_GETCSVMETADATA_ERROR_OPEN_FILE', $filename), 404);
         }
 
         // Check and skip BOM (UTF-8)
@@ -1609,7 +1598,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
         if ($headers === false) {
             fclose($handle);
-            throw new \RuntimeException("Не удалось прочитать заголовки из файла: $filename");
+            throw new RuntimeException(Text::sprintf('PLG_CFI_IMPORT_GETCSVMETADATA_ERROR_READ_CSV_HEADERS', $filename), 500);
         }
 
         $total = 0;
@@ -1686,8 +1675,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             ['export_data' => $export_data],
             JPATH_SITE . '/layouts/plugins/system/cfi'
         );
-
-
     }
 }
 
