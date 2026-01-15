@@ -27,6 +27,10 @@
         <language tag="ru-RU">ru-RU/plg_system_cfi.ini</language>
         <language tag="ru-RU">ru-RU/plg_system_cfi.sys.ini</language>
     </languages>
+    <layouts destination="plugins/system/cfi" folder="layouts">
+        <file>default.php</file>
+        <file>upload.php</file>
+    </layouts>
     <config>
         <fields name="params">
             <fieldset name="basic">
