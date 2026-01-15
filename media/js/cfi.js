@@ -1,10 +1,10 @@
 /**
- * @package     System - CFI
+ * @package    System - CFI
  * @subpackage  System.cfi
  * @copyright   Copyright (C) Sergey Tolkachyov. All rights reserved.
  * @license     GNU General Public License version 3 or later; see http://www.gnu.org/licenses/gpl-3.0.txt
- * @author      Sergey Tolkachyov <info@web-tolk.ru
- * @link        http://web-tolk.ru
+ * @author     Sergey Tolkachyov
+ * @link       https://web-tolk.ru
  */
 
 ((CFI) => {

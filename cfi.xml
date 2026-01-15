@@ -2,11 +2,11 @@
 <extension type="plugin" group="system" method="upgrade">
     <name>PLG_CFI</name>
     <version>2.0.0</version>
-    <creationDate>17.11.2025</creationDate>
-    <author>Aleksey A. Morozov, Sergey Tolkachyov</author>
+    <creationDate>15.01.2026</creationDate>
+    <author>Sergey Tolkachyov</author>
     <authorEmail>info@web-tolk.ru</authorEmail>
     <authorUrl>https://web-tolk.ru</authorUrl>
-    <copyright>Copyright (c) 2025 Aleksey A. Morozov, Sergey Tolkachyov. All rights reserved.</copyright>
+    <copyright>Copyright (c) 2019 - 2026 Sergey Tolkachyov. All rights reserved.</copyright>
     <license>GNU General Public License version 3 or later; see http://www.gnu.org/licenses/gpl-3.0.txt</license>
     <description>PLG_CFI_DESC</description>
     <namespace path="src">Joomla\Plugin\System\Cfi</namespace>
