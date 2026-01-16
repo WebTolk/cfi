@@ -162,8 +162,7 @@ window.CfiUpload = window.CfiUpload || {};
 	CfiUpload.uploadSuccess = (response) => {
 
 		response = JSON.parse(response);
-		console.log('CfiUpload.uploadSuccess');
-		console.log(response);
+
 		if (response.success === true) {
 
 			CfiUpload.message.innerHTML = response.message;
