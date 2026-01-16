@@ -43,7 +43,6 @@
 
     CFI.startTask = () => {
         const startTaskUrl = Joomla.getOptions('system.paths').baseFull + 'index.php?option=com_ajax&plugin=cfi&group=system&format=json&action=start_task&' + Joomla.getOptions('csrf.token') + '=1&task_id='+CFI.taskId + '&task_type='+CFI.activeTaskType;
-        console.log('startTask....');
         Joomla.request({
             // Find the action url associated with the form - we need to add the token to this
             url: startTaskUrl,

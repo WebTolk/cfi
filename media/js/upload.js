@@ -78,8 +78,9 @@ window.CfiUpload = window.CfiUpload || {};
 		CfiUpload.resetArea();
 
 		const fileList = event.target.files || event.dataTransfer.files;
-		let fileSize = fileList[0].size;
-		let fileType = fileList[0].type;
+		const fileSize = fileList[0].size;
+		const fileType = fileList[0].type;
+		const fileName = fileList[0].name.toLowerCase();
 
 		if (fileSize >= CfiUpload.fileSizeMax) {
 			CfiUpload.dragZone.classList.add('shadow-danger');
@@ -88,9 +89,9 @@ window.CfiUpload = window.CfiUpload || {};
 			return false;
 		}
 
-		if (fileType !== 'text/csv') {
+		if (!fileName.endsWith('.csv')) {
 			CfiUpload.dragZone.classList.add('shadow-danger');
-			CfiUpload.message.innerHTML = Joomla.Text._('PLG_CFI_IMPORT_UPLOAD_ERROR_UPLOAD_WRONG_MIME_TYPE');
+			CfiUpload.message.innerHTML = Joomla.Text._('PLG_CFI_IMPORT_UPLOAD_ERROR_UPLOAD_WRONG_FILE_TYPE');
 			CfiUpload.message.classList.add('text-danger', 'fw-bold');
 
 			return false;

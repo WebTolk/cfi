@@ -76,7 +76,6 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     private string $cp;
     private array $fieldPlugins;
 
-//    private array $tableHeaders = [];
 
     /**
      * @var mixed
@@ -105,8 +104,11 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         parent::__construct($subject, $config);
 
         $this->config = Factory::getContainer()->get('config');
-        $this->file   = Path::clean($this->config->get('tmp_path') . '/' . (new Date())->toUnix() . '.csv');
-
+        $tmp_path = Path::clean($this->config->get('tmp_path'));
+        if(!is_dir($tmp_path)) {
+            $tmp_path = JPATH_SITE . DIRECTORY_SEPARATOR . 'tmp';
+        }
+        $this->file   = Path::clean($tmp_path . DIRECTORY_SEPARATOR . (new Date())->toUnix() . '.csv');
         $this->task_id_file = $this->config->get('tmp_path') . '/cfi_task_%s.json';
         $this->stop_file = $this->config->get('tmp_path') . '/cfi_task_%s_stop.txt';
 
@@ -850,15 +852,15 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
     /**
      *
-     * @param   array|string  $data      error message
+     * @param   array|object|string  $data      error message
      * @param   int           $priority  Joomla Log priority
      *
      * @return  void
      * @since   2.0.0
      */
-    public function saveToLog(array|string $data, int $priority = Log::NOTICE): void
+    public function saveToLog(array|object|string $data, int $priority = Log::NOTICE): void
     {
-        if (is_array($data)) {
+        if (is_array($data) || is_object($data)) {
             $data = json_encode($data, JSON_UNESCAPED_UNICODE);
         }
 
@@ -1120,6 +1122,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
         // append or write
         $file_mode = (file_exists($this->file) ? 'a' : 'w');
+        $this->saveToLog(Text::sprintf('PLG_CFI_EXPORT_FILE_INFO', $this->file, $file_mode), Log::INFO);
         // file handler
         if (($fileHandle = fopen($this->file, $file_mode)) === false) {
             $this->saveToLog(Text::_('PLG_CFI_EXPORTFILE_CREATE'), Log::ERROR);
