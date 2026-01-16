@@ -203,6 +203,7 @@
         </fields>
     </config>
     <updateservers>
-        <server type="extension" priority="1" name="PLG_CFI"><![CDATA[https://joomline.net/update.html?extension_id=89.xml]]></server>
+        <server type="extension" priority="1" name="CFI - Joomla articles export/import updates">https://web-tolk.ru/component/swjprojects/jupdate?element=cfi</server>
     </updateservers>
+    <changelogurl>https://web-tolk.ru/jchangelog?element=cfi</changelogurl>
 </extension>
