@@ -176,9 +176,8 @@ window.CfiUpload = window.CfiUpload || {};
 			}
 		} else {
 			CfiUpload.resetArea();
-			Joomla.renderMessages({
-				error: [response.message]
-			});
+			response.messages.error.push(response.message);
+			Joomla.renderMessages(response.messages);
 			return false;
 		}
 

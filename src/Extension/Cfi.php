@@ -441,7 +441,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
         // Check allowed file MIME-type, file extension, file size etc.
         if (!(new MediaHelper())->canUpload($userfile)) {
-            echo new JsonResponse('', Text::_('PLG_CFI_IMPORT_UPLOAD_ERROR_UPLOAD_WRONG_MIME_TYPE'), true);
+            echo new JsonResponse('', Text::_('PLG_CFI_IMPORT_UPLOAD_ERROR_UPLOAD_WRONG_FILE_TYPE'), true);
 
             return false;
         }
