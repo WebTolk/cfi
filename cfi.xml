@@ -34,6 +34,9 @@
     <config>
         <fields name="params">
             <fieldset name="basic">
+                <field type="plugininfo"
+                       addfieldprefix="Joomla\Plugin\System\Cfi\Fields"
+                       name="plugininfo"/>
                 <field type="list"
                        name="article_fields"
                        label="PLG_CFI_EXPORT_PARAMS_ARTICLE_PROPS_LIST"

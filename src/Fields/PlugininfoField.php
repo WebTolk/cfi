@@ -8,7 +8,7 @@
  * @since         1.0.0
  */
 
-namespace Joomla\Plugin\RadicalMartFields\Wtsetelements\Fields;
+namespace Joomla\Plugin\System\Cfi\Fields;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Field\NoteField;
