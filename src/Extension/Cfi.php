@@ -651,6 +651,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             } else {
                 $article = array_replace_recursive((array)$article, $articleData);
             }
+
             // Save original category id for existing articles and set default category for new articles
             if($isNewArticle && empty($article['catid'])) {
                 $article['catid'] = $this->getCategories()[0];
@@ -1309,9 +1310,9 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'publish_down'     => '',
             'featured_up'      => '',
             'featured_down'    => '',
+            'metadesc'   => '',
+            'metakey'    => '',
             'metadata'         => [
-                'metadesc'   => '',
-                'metakey'    => '',
                 'robots'     => '',
                 'author'     => '',
                 'rights'     => '',
@@ -1407,11 +1408,11 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'publish_down',
             'featured_up',
             'featured_down',
+            'metadesc',
+            'metakey',
         ];
 
         $metadata = [
-            'metadesc',
-            'metakey',
             'robots',
             'author',
             'rights',
