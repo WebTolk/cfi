@@ -1,6 +1,6 @@
 # CFI
 
-![Version](https://img.shields.io/badge/VERSION-2.0.00-0366d6.svg?style=for-the-badge)
+![Version](https://img.shields.io/github/release/WebTolk/cfi.svg?style=for-the-badge)
 ![Joomla!](https://img.shields.io/badge/Joomla!-4.3+-1A3867.svg?style=for-the-badge)
 ![Php](https://img.shields.io/badge/php-8.0+-8892BF.svg?style=for-the-badge)
 
