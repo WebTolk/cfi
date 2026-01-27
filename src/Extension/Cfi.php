@@ -1,7 +1,7 @@
 <?php
 /**
  * @package    System - CFI
- * @version       2.0.0
+ * @version       2.0.1
  * @Author        Sergey Tolkachyov, https://web-tolk.ru
  * @copyright     Copyright (C) 2024 Sergey Tolkachyov
  * @license       GNU/GPL http://www.gnu.org/licenses/gpl-3.0.html
@@ -71,37 +71,37 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         "п»ї", // UTF-8 OO
     ];
 
-    private $user;
     private ?string $file;
     private string $cp;
     private array $fieldPlugins;
 
-
     /**
      * @var mixed
-     * @since version
+     * @since 1.0.0
      */
     private mixed $config;
     /**
      * @var string
      * @since 2.0.0
      */
-    private string $task_id;
+    private string $task_id = '';
 
     /**
      * @var string
      * @since 2.0.0
      */
-    private string $stop_file;
+    private string $stop_file = '';
     /**
      * @var string
      * @since 2.0.0
      */
-    private string $task_id_file;
+    private string $task_id_file = '';
 
     public function __construct(&$subject, $config)
     {
         parent::__construct($subject, $config);
+
+        if (!Factory::getApplication()->isClient('administrator')) return;
 
         $this->config = Factory::getContainer()->get('config');
         $tmp_path = Path::clean($this->config->get('tmp_path'));
@@ -121,8 +121,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         ];
 
 
-        $user       = $this->getCurrentUser();
-        $this->user = $user->id . ':' . $user->username;
+        $this->setCurrentUser(Factory::getApplication()->getIdentity());
 
         $this->cp = $this->params->get('cp', 'CP1251');
 
@@ -492,10 +491,15 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     private function importArticles(string $task_id)
     {
         $this->file = Path::clean($this->config->get('tmp_path') . '/' . $task_id . '.csv');
+        $user = 'Unknown user';
+        if($current_user = $this->getCurrentUser()){
+            $user =  $current_user->id . ':' . $current_user->username;
+        };
+
         // log template
         $log_data = [
             'result' => '',
-            'user'   => $this->user,
+            'user'   => $user,
             'file'   => $this->file,
         ];
 

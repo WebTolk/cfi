@@ -1,7 +1,7 @@
 <?php
 /*
  * @package    System - CFI
- * @version   2.0.0
+ * @version   2.0.1
  * @author     Sergey Tolkachyov
  * @copyright Copyright (c) 2023 Fictionlabs. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
