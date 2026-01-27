@@ -6,9 +6,9 @@
 
 # Время выполнения импорта/экспорта и объёмы материалов Joomla
 PHP-скрипту устанавливается лимит `0`. Далее на временные лимиты влияют параметры самого веб-сервера:  
-Nginx (`fastcgi_read_timeout`, `proxy_read_timeout`, `client_body_timeout`),  
-Apache (`Timeout`, `ProxyTimeout`),  
-PHP-FPM (`request_terminate_timeout`),  
+- Nginx (`fastcgi_read_timeout`, `proxy_read_timeout`, `client_body_timeout`),
+- Apache (`Timeout`, `ProxyTimeout`),  
+- PHP-FPM (`request_terminate_timeout`),  
 из-за чего скрипт может прекратить свою работу по инициативе веб-сервера.
 
 Экспорт выполняется быстрее, чем импорт. Скорость импорта на слабом сервере может колебаться от **3–4 до 10 articles в секунду**. Объём экспорта на слабом сервере может составлять до **нескольких десятков тысяч articles** с учётом пользовательских полей. На тестах **14 000 articles** без пользовательских полей выгружалось чуть меньше **1,5 минут**.

@@ -8,9 +8,9 @@ _description in Russian [here](README.ru.md)_
 
 # Execution time and article volumes while exporting or importing Joomla articles
 The PHP script is set to a limit of `0`. Then the time limits are affected by the web server parameters:  
-Nginx (`fastcgi_read_timeout`, `proxy_read_timeout`, `client_body_timeout`),  
-Apache (`Timeout`, `ProxyTimeout`),  
-PHP-FPM (`request_terminate_timeout`),  
+- Nginx (`fastcgi_read_timeout`, `proxy_read_timeout`, `client_body_timeout`),
+- Apache (`Timeout`, `ProxyTimeout`),  
+- PHP-FPM (`request_terminate_timeout`),  
 which may cause the script to be stopped by the server.
 
 Export is faster than import. Import speed on a weak server can range **from 3–4 to 10 articles per second**. Export volume on a weak server can reach **tens of thousands of articles**, including custom fields. In tests, **14,000 articles** without custom fields were exported in slightly under **1.5 minutes**.
