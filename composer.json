@@ -1,0 +1,31 @@
+{
+  "name": "webtolk/cfi",
+  "description": "Joomla system plugin for CSV export/import of Joomla articles.",
+  "type": "joomla-plugin",
+  "license": "GPL-3.0-or-later",
+  "minimum-stability": "stable",
+  "autoload": {
+    "psr-4": {
+      "Joomla\\Plugin\\System\\Cfi\\": "src/"
+    }
+  },
+  "scripts": {
+    "qa": [
+      "@qa:syntax",
+      "@qa:phpcs",
+      "@qa:cs",
+      "@qa:phpstan",
+      "@qa:phpunit"
+    ],
+    "qa:syntax": "php -r \"foreach (['script.php','services/provider.php','src/Extension/Cfi.php','src/Fields/PlugininfoField.php','layouts/default.php','layouts/upload.php','tests/bootstrap.php'] as $file) { passthru('php -l ' . escapeshellarg($file), $code); if ($code !== 0) exit($code); }\"",
+    "qa:phpcs": "php E:/.agents/tools/php-qa/vendor/bin/phpcs --standard=phpcs.xml --report=full --report-file=.webtolk/tmp/phpcs.txt",
+    "qa:cs": "php E:/.agents/tools/php-qa/vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no --config=.php-cs-fixer.dist.php",
+    "qa:phpstan": "php -d opcache.enable_cli=0 E:/.agents/tools/php-qa/vendor/bin/phpstan analyse --configuration=phpstan.neon --debug",
+    "qa:phpunit": "php E:/.agents/tools/php-qa/vendor/bin/phpunit --configuration=phpunit.xml",
+    "package:info": "php E:/.agents/tools/phing-packager/bin/packager.php info --config=.webtolk/build/package.config.json",
+    "package:build": "php E:/.agents/tools/phing-packager/bin/packager.php package --config=.webtolk/build/package.config.json --output-dir=.packages"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="CFI Packaging Bridge" default="1. Info">
+    <property name="config" value=".webtolk/build/package.config.json"/>
+    <property name="targetRoot" value="."/>
+    <import file="E:/.agents/tools/phing-packager/build.xml"/>
+</project>

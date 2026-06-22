@@ -1,0 +1,22 @@
+parameters:
+  level: 1
+  paths:
+    - script.php
+    - services
+    - src
+    - layouts
+  tmpDir: .webtolk/tmp/phpstan
+  bootstrapFiles:
+    - E:/OSPanel/home/joomla.local/public/libraries/bootstrap.php
+  excludePaths:
+    analyse:
+      - .webtolk
+      - .phing
+      - .packages
+      - tests
+  treatPhpDocTypesAsCertain: false
+  ignoreErrors:
+    -
+      message: '#Constant _JEXEC not found#'
+      paths:
+        - *

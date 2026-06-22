@@ -1281,6 +1281,46 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
     }
 
     /**
+     * Normalize imported article tag ids for com_content ArticleModel::save().
+     *
+     * @param   mixed  $value  CSV value from the articletags column.
+     *
+     * @return array
+     *
+     * @since 2.0.2
+     */
+    private function normalizeImportedTags(mixed $value): array
+    {
+        if (is_array($value)) {
+            $tagIds = $value;
+        } else {
+            $value = trim((string) $value);
+
+            if ($value === '') {
+                return [];
+            }
+
+            if (str_starts_with($value, 'array::')) {
+                $decoded = json_decode(explode('::', $value, 2)[1], true);
+                $tagIds  = is_array($decoded) ? $decoded : [];
+            } else {
+                $decoded = json_decode($value, true);
+                $tagIds  = is_array($decoded) ? $decoded : explode(',', $value);
+            }
+        }
+
+        return array_values(
+            array_filter(
+                array_map(
+                    static fn($tagId) => (int) trim((string) $tagId),
+                    $tagIds
+                ),
+                static fn($tagId) => $tagId > 0
+            )
+        );
+    }
+
+    /**
      * Return article data structure
      *
      * @return array
@@ -1316,6 +1356,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'featured_down'    => '',
             'metadesc'   => '',
             'metakey'    => '',
+            'tags'             => [],
             'metadata'         => [
                 'robots'     => '',
                 'author'     => '',
@@ -1414,6 +1455,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'featured_down',
             'metadesc',
             'metakey',
+            'tags',
         ];
 
         $metadata = [
@@ -1523,7 +1565,9 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
             if($data_group = $this->getImportColumnNameGroup($column)) {
                 if($data_group == 'article') {
-                    if($column == 'alias') {
+                    if($column == 'tags') {
+                        $articleData[$column] = $this->normalizeImportedTags($fieldsData[$key]);
+                    } elseif($column == 'alias') {
                         $articleData[$column] = OutputFilter::stringURLSafe($fieldsData[$key]);
                     } elseif(in_array($column, ['created','modified','checked_out_time','publish_up','publish_down','featured_up','featured_down'])) {
                         // Fix date format to SQL
