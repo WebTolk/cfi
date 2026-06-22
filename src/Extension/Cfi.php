@@ -1,9 +1,9 @@
 <?php
 /**
- * @package    System - CFI
- * @version       2.0.1
+ * @package       CFI
+ * @version       2.0.2
  * @Author        Sergey Tolkachyov, https://web-tolk.ru
- * @copyright     Copyright (C) 2024 Sergey Tolkachyov
+ * @copyright  Copyright (c) 2019 - 2026 Sergey Tolkachyov. All rights reserved.
  * @license       GNU/GPL http://www.gnu.org/licenses/gpl-3.0.html
  * @since         1.0.0
  */
@@ -1052,6 +1052,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 ->bootComponent('com_content')
                 ->getMVCFactory()
                 ->createModel('Articles', 'Administrator');
+            $model->setState('list.select', 'a.*');
             $total = $model->getTotal();
             $limit = $model->getState('list.limit');
 
@@ -1079,8 +1080,10 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         }
 
         // return result
+        $sitePath     = str_replace('\\', '/', JPATH_SITE);
+        $filePath     = str_replace('\\', '/', $this->file);
         $download_url = new Uri(Uri::root());
-        $download_url->setPath(str_replace(JPATH_SITE, '', $this->file));
+        $download_url->setPath(str_replace($sitePath, '', $filePath));
 
         // Complete task for frontend
         File::write(
@@ -1185,7 +1188,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         foreach ($articles as $article) {
             $outItem = [];
             foreach ($article_props as $property) {
-                $property_data = $article->$property;
+                $property_data = $this->getExportArticlePropertyValue($article, $property);
                 if(is_array($property_data)) {
                     $outItem[] =  'array::' . json_encode($property_data);
                 } elseif(is_string($property_data)) {
@@ -1222,6 +1225,62 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         unset($articles, $jsFields);
 
         return true;
+    }
+
+    /**
+     * Return a property value for CSV export, including expanded article JSON groups.
+     *
+     * @param   object  $article   Joomla article data.
+     * @param   string  $property  Export property name.
+     *
+     * @return mixed
+     *
+     * @since 2.0.2
+     */
+    private function getExportArticlePropertyValue(object $article, string $property): mixed
+    {
+        $group = $this->getImportColumnNameGroup($property);
+
+        if (in_array($group, ['metadata', 'images', 'urls', 'attribs'], true)) {
+            return $this->getArticleGroupPropertyValue($article, $group, $property);
+        }
+
+        return $article->{$property} ?? '';
+    }
+
+    /**
+     * Return a nested value from Joomla article JSON groups.
+     *
+     * @param   object  $article   Joomla article data.
+     * @param   string  $group     Article group property such as images or attribs.
+     * @param   string  $property  Nested group property.
+     *
+     * @return mixed
+     *
+     * @since 2.0.2
+     */
+    private function getArticleGroupPropertyValue(object $article, string $group, string $property): mixed
+    {
+        $groupData = $article->{$group} ?? [];
+
+        if (is_string($groupData)) {
+            $decoded = json_decode($groupData, true);
+            $groupData = is_array($decoded) ? $decoded : [];
+        }
+
+        if ($groupData instanceof Registry) {
+            $groupData = $groupData->toArray();
+        }
+
+        if ($groupData instanceof \stdClass) {
+            $groupData = (array) $groupData;
+        }
+
+        if (is_array($groupData) && array_key_exists($property, $groupData)) {
+            return $groupData[$property];
+        }
+
+        return '';
     }
 
     /**
@@ -1318,6 +1377,26 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
                 static fn($tagId) => $tagId > 0
             )
         );
+    }
+
+    /**
+     * Return nested field names from an import/export article group.
+     *
+     * @param   string  $group  Group name from the article template.
+     *
+     * @return array
+     *
+     * @since 2.0.2
+     */
+    private function getArticleGroupFields(string $group): array
+    {
+        $template = $this->getImportArticleTemplate();
+
+        if (!isset($template[$group]) || !is_array($template[$group])) {
+            return [];
+        }
+
+        return array_keys($template[$group]);
     }
 
     /**
@@ -1458,69 +1537,10 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'tags',
         ];
 
-        $metadata = [
-            'robots',
-            'author',
-            'rights',
-            'xreference',
-        ];
-
-        $images = [
-            'image_intro',
-            'float_intro',
-            'image_intro_alt',
-            'image_intro_caption',
-            'image_fulltext',
-            'float_fulltext',
-            'image_fulltext_alt',
-            'image_fulltext_caption',
-        ];
-
-        $urls = [
-            'urla',
-            'urlatext',
-            'targeta',
-            'urlb',
-            'urlbtext',
-            'targetb',
-            'urlc',
-            'urlctext',
-            'targetc',
-        ];
-
-        $attribs = [
-            'article_layout',
-            'show_title',
-            'link_titles',
-            'show_tags',
-            'show_intro',
-            'info_block_position',
-            'info_block_show_title',
-            'show_category',
-            'link_category',
-            'show_parent_category',
-            'link_parent_category',
-            'show_associations',
-            'show_author',
-            'link_author',
-            'show_create_date',
-            'show_modify_date',
-            'show_publish_date',
-            'show_item_navigation',
-            'show_icons',
-            'show_print_icon',
-            'show_email_icon',
-            'show_vote',
-            'show_hits',
-            'show_noauth',
-            'urls_position',
-            'alternative_readmore',
-            'article_page_title',
-            'show_publishing_option',
-            'show_article_options',
-            'show_urls_images_backend',
-            'show_urls_images_frontend',
-        ];
+        $metadata = $this->getArticleGroupFields('metadata');
+        $images   = $this->getArticleGroupFields('images');
+        $urls     = $this->getArticleGroupFields('urls');
+        $attribs  = $this->getArticleGroupFields('attribs');
 
         if (in_array($column_name, $article, true)) {
             return 'article';
@@ -1539,6 +1559,54 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
         }
 
         return false;
+    }
+
+    /**
+     * Return selectable article export fields, including expanded nested groups.
+     *
+     * @return array
+     *
+     * @since 2.0.2
+     */
+    private function getExportArticleFields(bool $expandArticleGroups = false): array
+    {
+        $articleFields = array_keys($this->getImportArticleTemplate());
+        $articleFields = array_combine($articleFields, $articleFields);
+
+        if (!$expandArticleGroups) {
+            return $articleFields;
+        }
+
+        return [
+            [
+                'text'  => 'article',
+                'items' => $articleFields,
+            ],
+            [
+                'text'  => 'images',
+                'items' => $this->getArticleGroupOptions('images'),
+            ],
+            [
+                'text'  => 'attribs',
+                'items' => $this->getArticleGroupOptions('attribs'),
+            ],
+        ];
+    }
+
+    /**
+     * Return grouped list option data for a nested article group.
+     *
+     * @param   string  $group  Group name from the article template.
+     *
+     * @return array
+     *
+     * @since 2.0.2
+     */
+    private function getArticleGroupOptions(string $group): array
+    {
+        $fields = $this->getArticleGroupFields($group);
+
+        return array_combine($fields, $fields);
     }
 
     /**
@@ -1697,8 +1765,8 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             }
         }
 
-        $article_fields = array_keys($this->getImportArticleTemplate());
-        $article_fields = array_combine($article_fields, $article_fields);
+        $expandArticleGroups = (bool) $this->params->get('expand_article_groups', 0);
+        $article_fields      = $this->getExportArticleFields($expandArticleGroups);
         $export_data   = [
             'total_items'      => $model->getTotal(),
             'categories_count' => (!empty($categories) ? count($categories) : Text::_('JALL')),
@@ -1715,6 +1783,7 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
             'params'           => [
                 'params.use_tags'          => $this->params->get('use_tags', 0),
                 'params.use_custom_fields' => $this->params->get('use_custom_fields', 0),
+                'params.expand_article_groups' => $expandArticleGroups,
                 'params.article_props'     => $article_props,
                 'params.cp'                => $this->params->get('cp', 'CP1251'),
             ],
@@ -1722,12 +1791,17 @@ final class Cfi extends CMSPlugin implements SubscriberInterface
 
         $this->getApplication()->getLanguage()->load('com_content');
         $this->getApplication()->getLanguage()->load('plg_system_cfi', JPATH_ADMINISTRATOR);
+        $layoutPath = JPATH_SITE
+            . DIRECTORY_SEPARATOR . 'layouts'
+            . DIRECTORY_SEPARATOR . 'plugins'
+            . DIRECTORY_SEPARATOR . 'system'
+            . DIRECTORY_SEPARATOR . 'cfi';
+
         echo LayoutHelper::render(
             'default',
             ['export_data' => $export_data],
-            JPATH_SITE . '/layouts/plugins/system/cfi'
+            $layoutPath
         );
     }
 }
-
 
