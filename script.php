@@ -1,9 +1,9 @@
 <?php
 /**
- * @package    System - CFI
- * @version       2.0.1
+ * @package       CFI
+ * @version       2.0.2
  * @Author        Sergey Tolkachyov, https://web-tolk.ru
- * @copyright     Copyright (C) 2024 Sergey Tolkachyov
+ * @copyright  Copyright (c) 2019 - 2026 Sergey Tolkachyov. All rights reserved.
  * @license       GNU/GPL http://www.gnu.org/licenses/gpl-3.0.html
  * @since         1.0.0
  */
@@ -197,6 +197,7 @@ return new class() implements ServiceProviderInterface {
 				<div class="btn-group-vertical mb-3 web-tolk-btn-links" role="group" aria-label="Joomla community links">
 					<a class="btn btn-danger text-white w-100" href="https://t.me/joomlaru" target="_blank">' . Text::_($element . '_JOOMLARU_TELEGRAM_CHAT') . '</a>
 					<a class="btn btn-primary text-white w-100" href="https://t.me/webtolkru" target="_blank">' . Text::_($element . '_WEBTOLK_TELEGRAM_CHANNEL') . '</a>
+					<a class="btn btn-success text-white w-100" href="https://max.ru/join/LChBfwGDmArJpK6--oS0qVAJA1WdRk0OPXciwryF4ZY" target="_blank">' . Text::_($element . '_MAX_CHANNEL') . '</a>
 				</div>
 				' . Text::_($element . "_MAYBE_INTERESTING") . '
 				</div>
@@ -279,19 +280,21 @@ return new class() implements ServiceProviderInterface {
                 }
 
                 // Get destination
-                $folder      = ((string) $element->attributes()->destination) ? '/' . $element->attributes()->destination : null;
-                $destination = Path::clean(JPATH_ROOT . '/layouts' . $folder);
+                $folder      = ((string) $element->attributes()->destination)
+                    ? DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string) $element->attributes()->destination)
+                    : null;
+                $destination = Path::clean(JPATH_ROOT . DIRECTORY_SEPARATOR . 'layouts' . $folder);
 
                 // Get source
                 $folder = (string) $element->attributes()->folder;
-                $source = ($folder && file_exists($installer->getPath('source') . '/' . $folder)) ?
-                    $installer->getPath('source') . '/' . $folder : $installer->getPath('source');
+                $source = ($folder && file_exists($installer->getPath('source') . DIRECTORY_SEPARATOR . $folder)) ?
+                    $installer->getPath('source') . DIRECTORY_SEPARATOR . $folder : $installer->getPath('source');
 
                 // Prepare files
                 $copyFiles = array();
                 foreach ($element->children() as $file) {
-                    $path['src']  = Path::clean($source . '/' . $file);
-                    $path['dest'] = Path::clean($destination . '/' . $file);
+                    $path['src']  = Path::clean($source . DIRECTORY_SEPARATOR . $file);
+                    $path['dest'] = Path::clean($destination . DIRECTORY_SEPARATOR . $file);
 
                     // Is this path a file or folder?
                     $path['type'] = $file->getName() === 'folder' ? 'folder' : 'file';
@@ -328,12 +331,14 @@ return new class() implements ServiceProviderInterface {
                 $files = $element->children();
 
                 // Get source
-                $folder = ((string) $element->attributes()->destination) ? '/' . $element->attributes()->destination : null;
-                $source = Path::clean(JPATH_ROOT . '/layouts' . $folder);
+                $folder = ((string) $element->attributes()->destination)
+                    ? DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string) $element->attributes()->destination)
+                    : null;
+                $source = Path::clean(JPATH_ROOT . DIRECTORY_SEPARATOR . 'layouts' . $folder);
 
                 // Process each file in the $files array (children of $tagName).
                 foreach ($files as $file) {
-                    $path = Path::clean($source . '/' . $file);
+                    $path = Path::clean($source . DIRECTORY_SEPARATOR . $file);
 
                     // Actually delete the files/folders
                     if (is_dir($path)) {

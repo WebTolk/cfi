@@ -1,10 +1,10 @@
 <?php
 
 /**
- * @package    System - CFI
+ * @package       CFI
  * @subpackage  System.webauthn
  *
- * @copyright   (C) 2020 Open Source Matters, Inc. <https://www.joomla.org>
+ * @copyright  Copyright (c) 2019 - 2026 Sergey Tolkachyov. All rights reserved.
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
@@ -45,6 +45,7 @@ $article_fields = $export_data['article_fields'];
 
 $use_tags = boolval($params['params.use_tags']);
 $use_custom_fields = boolval($params['params.use_custom_fields']);
+$expand_article_groups = boolval($params['params.expand_article_groups'] ?? false);
 
 Factory::getApplication()
     ->getDocument()
@@ -172,7 +173,19 @@ Text::script('PLG_CFI_PROCESS_CANCELED_BY_USER');
 		<h5><?php echo Text::_('PLG_CFI_EXPORT_ARTICLE_PROPS_LABEL');?></h5>
 
 		<?php
-		echo Select::genericlist(
+		if ($expand_article_groups) {
+			echo HTMLHelper::_(
+				'select.groupedlist',
+				$article_fields,
+				'cfi_export_article_props[]',
+				[
+					'id' => 'cfi_export_article_props',
+					'list.attr' => 'multiple="multiple" class="form-select h-100"',
+					'list.select' => $params['params.article_props'],
+				]
+			);
+		} else {
+			echo Select::genericlist(
 				data:$article_fields,
 				name:'cfi_export_article_props[]',
 				attribs: 'multiple="multiple" class="form-select h-100"',
@@ -180,6 +193,7 @@ Text::script('PLG_CFI_PROCESS_CANCELED_BY_USER');
 				optText: 'text',
 				selected: $params['params.article_props'],
 				idtag: 'cfi_export_article_props');
+		}
 		?>
 	</div>
 	<?php if ($use_custom_fields): ?>

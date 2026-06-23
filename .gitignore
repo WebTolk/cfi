@@ -1,3 +1,10 @@
 .idea
 .phing
 .packages
+.webtolk
+.serena
+.playwright-mcp
+.php-cs-fixer.cache
+.phpunit.result.cache
+tests
+scripts

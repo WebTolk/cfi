@@ -1,9 +1,9 @@
 <?php
 /**
- * @package    System - CFI
- * @version       2.0.1
+ * @package       CFI
+ * @version       2.0.2
  * @Author        Sergey Tolkachyov, https://web-tolk.ru
- * @copyright     Copyright (C) 2024 Sergey Tolkachyov
+ * @copyright  Copyright (c) 2019 - 2026 Sergey Tolkachyov. All rights reserved.
  * @license       GNU/GPL http://www.gnu.org/licenses/gpl-3.0.html
  * @since         1.0.0
  */

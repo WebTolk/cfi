@@ -1,11 +1,11 @@
 <?php
 /*
- * @package    System - CFI
- * @version   2.0.1
+ * @package       CFI
+ * @version   2.0.2
  * @author     Sergey Tolkachyov
- * @copyright Copyright (c) 2023 Fictionlabs. All rights reserved.
+ * @copyright  Copyright (c) 2019 - 2026 Sergey Tolkachyov. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
- * @link       https://web-tolk.ru
+ * @link          https://web-tolk.ru
  */
 
 \defined('_JEXEC') or die;
