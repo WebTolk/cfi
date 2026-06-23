@@ -6,3 +6,5 @@
 .playwright-mcp
 .php-cs-fixer.cache
 .phpunit.result.cache
+tests
+scripts

@@ -50,6 +50,20 @@ If the export contains articles from different categories whose fields belong on
 
 You can select only the `id` property and the custom fields you need. The import will then correctly process such a table.
 
+If tag export is enabled, tag IDs are written to the `articletags` column. During import, use comma-separated tag IDs in the same column:
+
+| articleid | articletitle | articletags |
+| --- | --- | --- |
+| 5 | About the company | 2,3 |
+| 8 | Contacts | 4 |
+
+If the expanded `images` and `attribs` fields are enabled in the export window, nested article parameters are written as regular CSV columns. The column name keeps the `article` prefix, for example `show_title` becomes `articleshow_title`; `article_layout` becomes `articlearticle_layout`:
+
+| articleid | articletitle | articleshow_title | articleshow_tags | articlearticle_layout |
+| --- | --- | --- | --- | --- |
+| 5 | About the company | 1 | 1 | cassiopeia:blog |
+| 8 | Contacts | 0 | 0 |  |
+
 # How does Joomla articles import work?
 With import, you can create new articles or update existing ones. The `articleid` column in the import table is used as the article identifier.
 
